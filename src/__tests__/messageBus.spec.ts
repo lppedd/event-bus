@@ -131,6 +131,55 @@ describe("MessageBus", () => {
     }).toThrowErrorMatchingInlineSnapshot(`[Error: [message-bus] the message bus is disposed]`);
   });
 
+  it("should propagate message to child buses (recursively)", () => {
+    const handler = vi.fn(() => {});
+    messageBus.subscribe(TestTopic, handler);
+
+    const childBus1 = messageBus.createChildBus();
+    const childHandler1 = vi.fn(() => {});
+    childBus1.subscribe(TestTopic, childHandler1);
+
+    const childBus2 = messageBus.createChildBus();
+    const childHandler2 = vi.fn(() => {});
+    childBus2.subscribe(TestTopic, childHandler2);
+
+    messageBus.publish(TestTopic, "it works");
+    vi.runAllTimers();
+
+    expect(handler).toHaveBeenCalledOnce();
+    expect(childHandler1).toHaveBeenCalledOnce();
+    expect(childHandler2).toHaveBeenCalledOnce();
+
+    expect(handler).toHaveBeenCalledWith("it works");
+    expect(childHandler1).toHaveBeenCalledWith("it works");
+    expect(childHandler2).toHaveBeenCalledWith("it works");
+
+    expect(childHandler1).toHaveBeenCalledAfter(handler);
+    expect(childHandler2).toHaveBeenCalledAfter(handler);
+  });
+
+  it("should propagate message to parent bus (not recursively)", () => {
+    const topic = createTopic<string>("ParentTestTopic", "parent");
+
+    const handler = vi.fn(() => {});
+    messageBus.subscribe(topic, handler);
+
+    const childBus = messageBus.createChildBus();
+    const childHandler = vi.fn(() => {});
+    childBus.subscribe(topic, childHandler);
+
+    childBus.publish(topic, "it works");
+    vi.runAllTimers();
+
+    expect(handler).toHaveBeenCalledOnce();
+    expect(childHandler).toHaveBeenCalledOnce();
+
+    expect(handler).toHaveBeenCalledWith("it works");
+    expect(childHandler).toHaveBeenCalledWith("it works");
+
+    expect(childHandler).toHaveBeenCalledBefore(handler);
+  });
+
   it("should dispose", () => {
     expect(messageBus.isDisposed).toBe(false);
     messageBus.dispose();

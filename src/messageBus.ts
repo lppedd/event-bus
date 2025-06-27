@@ -32,6 +32,13 @@ export interface MessageBus {
   readonly isDisposed: boolean;
 
   /**
+   * Creates a new child bus linked to this one for hierarchical broadcasting.
+   *
+   * Messages with `children` broadcast direction will be propagated to it.
+   */
+  createChildBus(): MessageBus;
+
+  /**
    * Publishes a new message without data.
    */
   publish(topic: Topic<void>): void;
@@ -49,9 +56,9 @@ export interface MessageBus {
   subscribe<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
 
   /**
-   * Disposes the message bus, removing all active subscriptions.
+   * Disposes the message bus and all its child buses, removing all active subscriptions.
    *
-   * After disposal, no further publishing or subscribing is possible.
+   * After disposal, neither this bus nor any child buses can be used for publishing or subscribing.
    */
   dispose(): void;
 }
@@ -60,5 +67,5 @@ export interface MessageBus {
  * Creates a new message bus.
  */
 export function createMessageBus(options?: Partial<MessageBusOptions>): MessageBus {
-  return new MessageBusImpl(options);
+  return new MessageBusImpl(undefined, options);
 }

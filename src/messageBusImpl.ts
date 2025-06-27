@@ -5,14 +5,18 @@ import type { Topic } from "./topic";
 
 // @internal
 export class MessageBusImpl implements MessageBus {
-  private readonly myRegistry = new SubscriptionRegistry();
   private readonly myOptions: MessageBusOptions;
+  private readonly myRegistry = new SubscriptionRegistry();
+  private readonly myChildren = new Set<MessageBusImpl>();
   private readonly myPublishQueue: (() => void)[] = [];
 
   private myPublishing: boolean = false;
   private myDisposed: boolean = false;
 
-  constructor(options?: Partial<MessageBusOptions>) {
+  constructor(
+    private readonly myParent: MessageBusImpl | undefined,
+    options?: Partial<MessageBusOptions>,
+  ) {
     this.myOptions = {
       safePublishing: false,
       ...options,
@@ -23,17 +27,23 @@ export class MessageBusImpl implements MessageBus {
     return this.myDisposed;
   }
 
-  publish<T>(topic: Topic<T>, data?: T): void {
+  createChildBus(options?: Partial<MessageBusOptions>): MessageBus {
+    const child = new MessageBusImpl(this, {
+      ...this.myOptions,
+      ...options,
+    });
+
+    this.myChildren.add(child);
+    return child;
+  }
+
+  publish<T>(topic: Topic<T>, data?: T, /* @internal */ stopHere?: boolean): void {
     this.checkDisposed();
-    const handlers = this.myRegistry.get(topic);
+    this.myPublishQueue.push(() => this.publishMessage(topic, data, stopHere));
 
-    if (handlers) {
-      this.myPublishQueue.push(() => this.publishMessage(handlers, data));
-
-      if (!this.myPublishing) {
-        this.myPublishing = true;
-        queueMicrotask(() => this.drainPublishQueue());
-      }
+    if (!this.myPublishing) {
+      this.myPublishing = true;
+      queueMicrotask(() => this.drainPublishQueue());
     }
   }
 
@@ -53,11 +63,52 @@ export class MessageBusImpl implements MessageBus {
   }
 
   dispose(): void {
+    if (this.myDisposed) {
+      return;
+    }
+
     this.myDisposed = true;
+
+    // Remove this bus from the parent's child buses
+    this.myParent?.myChildren?.delete(this);
+
+    // Dispose child buses
+    for (const child of this.myChildren) {
+      child.dispose();
+    }
+
+    this.myChildren.clear();
     this.myRegistry.clear();
   }
 
-  private publishMessage<T>(handlers: MessageHandler[], data: T): void {
+  private publishMessage<T>(topic: Topic<T>, data: T | undefined, stopHere?: boolean): void {
+    // Keep in mind that publish() will queue the task, so child buses,
+    // or the parent bus depending on the broadcasting direction,
+    // will receive the message after this bus
+    if (!stopHere) {
+      switch (topic.broadcastDirection) {
+        case "children":
+          for (const child of this.myChildren) {
+            child.publish(topic, data);
+          }
+
+          break;
+        case "parent":
+          this.myParent?.publish(topic, data, true);
+          break;
+      }
+    }
+
+    this.publishMessageToHandlers(topic, data);
+  }
+
+  private publishMessageToHandlers<T>(topic: Topic<T>, data: T): void {
+    const handlers = this.myRegistry.get(topic);
+
+    if (!handlers) {
+      return;
+    }
+
     for (let i = 0; i < handlers.length; i++) {
       const handler = handlers[i]!;
 

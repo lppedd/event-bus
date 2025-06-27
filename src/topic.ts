@@ -5,6 +5,18 @@ import { error } from "./errors";
 import { getMetadata } from "./metadata";
 
 /**
+ * The broadcasting direction for a topic.
+ *
+ * A message published to the topic will always be delivered first to handlers
+ * registered on the bus where `publish()` is called.
+ *
+ * Then, if the direction is:
+ * - `children`: the message is also propagated to all child buses (recursively)
+ * - `parent`: the message is also propagated to the **immediate** parent bus
+ */
+export type BroadcastDirection = "children" | "parent";
+
+/**
  * An identifier used to categorize messages in the message bus.
  */
 export interface Topic<T = any> {
@@ -12,6 +24,13 @@ export interface Topic<T = any> {
    * A human-readable name for the topic, useful for debugging and logging.
    */
   readonly displayName: string;
+
+  /**
+   * The broadcasting direction for the topic.
+   *
+   * @see {@link BroadcastDirection}
+   */
+  readonly broadcastDirection: BroadcastDirection;
 
   /**
    * @internal
@@ -33,8 +52,14 @@ export interface Topic<T = any> {
  * messageBus.subscribe(EnvTopic, (data) => console.log(data));
  * messageBus.publish(EnvTopic, "production"); // => 'production' logged to the console
  * ```
+ *
+ * @param displayName A human-readable name for the topic, useful for debugging and logging.
+ * @param broadcastDirection The broadcasting direction for the topic. `children` by default.
  */
-export function createTopic<T>(displayName: string): Topic<T> {
+export function createTopic<T>(
+  displayName: string,
+  broadcastDirection: BroadcastDirection = "children",
+): Topic<T> {
   const topicDebugName = `Topic<${displayName}>`;
   const topicDecorator: ParameterDecorator = function (
     target: any,
@@ -69,6 +94,7 @@ export function createTopic<T>(displayName: string): Topic<T> {
   };
 
   (topicDecorator as any).displayName = topicDebugName;
+  (topicDecorator as any).broadcastDirection = broadcastDirection;
   (topicDecorator as any).toString = () => topicDebugName;
   return topicDecorator as Topic<T>;
 }
