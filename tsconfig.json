@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "stripInternal": true,
+    "esModuleInterop": true,
+    "isolatedDeclarations": true,
+    "verbatimModuleSyntax": true,
+    "experimentalDecorators": true,
+    "noUncheckedIndexedAccess": true,
+    "lib": [
+      "ES2022"
+    ],
+    "target": "ES2022",
+    "composite": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "dist"
+  ]
+}
