@@ -1,4 +1,4 @@
-import { error } from "./errors";
+import { error, tag } from "./errors";
 import type { MessageBus, MessageBusOptions, MessageHandler, Subscription } from "./messageBus";
 import { SubscriptionRegistry } from "./registry";
 import type { Topic } from "./topic";
@@ -116,10 +116,10 @@ export class MessageBusImpl implements MessageBus {
         handler(data);
       } catch (e) {
         if (!this.myOptions.safePublishing) {
-          error("a message handler did not complete correctly", e);
+          error("unhandled error in message handler", e);
         }
 
-        console.error(e);
+        console.error(tag("caught unhandled error in message handler (safePublishing: true)."), e);
       }
     }
   }

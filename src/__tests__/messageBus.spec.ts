@@ -97,7 +97,7 @@ describe("MessageBus", () => {
       vi.runAllTimers();
     }).toThrowErrorMatchingInlineSnapshot(
       `
-      [Error: [message-bus] a message handler did not complete correctly
+      [Error: [message-bus] unhandled error in message handler
         [cause] some error occurred]
       `,
     );
@@ -110,6 +110,12 @@ describe("MessageBus", () => {
 
     messageBus.subscribe(TestTopic, () => {
       throw new Error("some error occurred");
+    });
+
+    vi.spyOn(console, "error").mockImplementation((...args: any[]) => {
+      expect(args).toHaveLength(2);
+      expect(args[0]).toBe("[message-bus] caught unhandled error in message handler (safePublishing: true).");
+      expect(String(args[1])).toBe("Error: some error occurred");
     });
 
     // Should not let errors escape, but print to console.error instead

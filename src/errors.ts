@@ -11,12 +11,8 @@ export function error(message: string, cause?: unknown): never {
   throw new Error(msg);
 }
 
-function isError(value: any): value is Error {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  return value && value.stack && value.message && typeof value.message === "string";
-}
-
-function tag(message: string): string {
+// @internal
+export function tag(message: string): string {
   return `[message-bus] ${message}`;
 }
 
@@ -24,4 +20,9 @@ function untag(message: string): string {
   return message.startsWith("[message-bus]") //
     ? message.substring(11).trimStart()
     : message;
+}
+
+function isError(value: any): value is Error {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  return value && value.stack && value.message && typeof value.message === "string";
 }
