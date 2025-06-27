@@ -36,7 +36,7 @@ export interface MessageBus {
    *
    * Messages with `children` broadcast direction will be propagated to it.
    */
-  createChildBus(): MessageBus;
+  createChildBus(options?: Partial<MessageBusOptions>): MessageBus;
 
   /**
    * Publishes a new message without data.
