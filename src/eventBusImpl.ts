@@ -16,7 +16,7 @@ export class EventBusImpl implements EventBus {
     };
   }
 
-  publish<T>(topic: Topic<T>, data: T): void {
+  publish<T>(topic: Topic<T>, data?: T): void {
     this.checkDisposed();
     const handlers = this.myRegistry.get(topic);
 

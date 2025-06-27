@@ -4,9 +4,12 @@ import type { Constructor } from "./contructor";
 import { error } from "./errors";
 import { getMetadata } from "./metadata";
 
+/**
+ * An identifier used to categorize events in the event bus.
+ */
 export interface Topic<T = any> {
   /**
-   * The presentable name of the topic.
+   * A human-readable name for the topic, useful for debugging and logging.
    */
   readonly topicName: string;
 
@@ -22,11 +25,13 @@ export interface Topic<T = any> {
 }
 
 /**
- * Creates a new event topic.
+ * Creates a new {@link Topic} that can be used to publish or subscribe to events.
  *
  * @example
  * ```ts
  * const EnvTopic = createTopic<string>("Env");
+ * eventBus.subscribe(EnvTopic, (data) => console.log(data));
+ * eventBus.publish(EnvTopic, "production"); // => 'production' logged to the console
  * ```
  */
 export function createTopic<T>(topicName: string): Topic<T> {
