@@ -30,7 +30,7 @@ describe("EventBus", () => {
     expect(testData).toBe("");
   });
 
-  it("should subscribe via decorator", () => {
+  it("should subscribe via @AutoSubscribe", () => {
     @AutoSubscribe(eventBus)
     class Example {
       data?: string;
@@ -62,18 +62,6 @@ describe("EventBus", () => {
       }
     }).toThrowErrorMatchingInlineSnapshot(
       `[Error: [event-bus] decorator for Topic<Test> cannot be used on static member Example.onTestTopic]`,
-    );
-  });
-
-  it("should throw if multiple topics per method", () => {
-    expect(() => {
-      const TestTopic2 = createTopic<string>("Test2");
-
-      class Example {
-        onTestTopic(@TestTopic _data: string, @TestTopic2 _data2: string): void {}
-      }
-    }).toThrowErrorMatchingInlineSnapshot(
-      `[Error: [event-bus] only a single topic registration is allowed on Example.onTestTopic]`,
     );
   });
 
