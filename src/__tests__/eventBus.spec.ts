@@ -73,7 +73,7 @@ describe("EventBus", () => {
         onTestTopic(@TestTopic _data: string, @TestTopic2 _data2: string): void {}
       }
     }).toThrowErrorMatchingInlineSnapshot(
-      `[Error: [event-bus] only a single topic registration is allowed on Example.onTestTopic]`,
+      `[Error: [event-bus] only a single topic subscription is allowed on Example.onTestTopic]`,
     );
   });
 

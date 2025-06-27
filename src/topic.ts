@@ -53,7 +53,7 @@ export function createTopic<T>(topicName: string): Topic<T> {
 
     if (methodSub) {
       const member = `${target.constructor.name}.${String(propertyKey)}`;
-      error(`only a single topic registration is allowed on ${member}`);
+      error(`only a single topic subscription is allowed on ${member}`);
     }
 
     methods.set(propertyKey, {
