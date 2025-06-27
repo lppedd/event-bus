@@ -40,7 +40,7 @@ describe("MessageBus", () => {
   });
 
   it("should subscribe via @AutoSubscribe", () => {
-    @AutoSubscribe(messageBus)
+    @AutoSubscribe(() => messageBus)
     class Example {
       data?: string;
 

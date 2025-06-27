@@ -29,18 +29,19 @@ type ClassDecorator = <T extends Constructor<object>>(target: T) => T | void;
  * }
  * ```
  */
-export function AutoSubscribe(messageBus: MessageBus): ClassDecorator {
+export function AutoSubscribe(messageBus: MessageBus | (() => MessageBus)): ClassDecorator {
   return function (Class) {
     return class extends Class {
       constructor(...args: any[]) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         super(...args);
 
-        const thisRef = new WeakRef(this);
         const metadata = getMetadata(Class);
+        const bus = typeof messageBus === "function" ? messageBus() : messageBus;
+        const thisRef = new WeakRef(this);
 
         for (const [methodKey, methodSub] of metadata.subscriptions.methods) {
-          const subscription = messageBus.subscribe(methodSub.topic, (data) => {
+          const subscription = bus.subscribe(methodSub.topic, (data) => {
             const deref = thisRef.deref();
 
             if (deref) {
