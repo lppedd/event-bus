@@ -125,9 +125,11 @@ export class MessageBusImpl implements MessageBus {
   }
 
   private drainPublishQueue(): void {
-    while (this.myPublishQueue.length > 0) {
-      const next = this.myPublishQueue.shift()!;
-      next();
+    if (!this.myDisposed) {
+      while (this.myPublishQueue.length > 0) {
+        const next = this.myPublishQueue.shift()!;
+        next();
+      }
     }
 
     this.myPublishing = false;
