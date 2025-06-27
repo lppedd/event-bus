@@ -16,6 +16,10 @@ export class MessageBusImpl implements MessageBus {
     };
   }
 
+  get isDisposed(): boolean {
+    return this.myDisposed;
+  }
+
   publish<T>(topic: Topic<T>, data?: T): void {
     this.checkDisposed();
     const handlers = this.myRegistry.get(topic);

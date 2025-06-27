@@ -116,4 +116,10 @@ describe("MessageBus", () => {
       `[Error: [message-bus] the message bus is disposed]`,
     );
   });
+
+  it("should dispose", () => {
+    expect(messageBus.isDisposed).toBe(false);
+    messageBus.dispose();
+    expect(messageBus.isDisposed).toBe(true);
+  });
 });

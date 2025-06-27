@@ -27,6 +27,11 @@ export interface Subscription {
  */
 export interface MessageBus {
   /**
+   * Whether the message bus is disposed.
+   */
+  readonly isDisposed: boolean;
+
+  /**
    * Publishes a new message without data.
    */
   publish(topic: Topic<void>): void;
