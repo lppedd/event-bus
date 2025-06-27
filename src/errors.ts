@@ -17,11 +17,11 @@ function isError(value: any): value is Error {
 }
 
 function tag(message: string): string {
-  return `[event-bus] ${message}`;
+  return `[message-bus] ${message}`;
 }
 
 function untag(message: string): string {
-  return message.startsWith("[event-bus]") //
+  return message.startsWith("[message-bus]") //
     ? message.substring(11).trimStart()
     : message;
 }

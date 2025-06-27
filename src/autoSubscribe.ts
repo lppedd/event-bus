@@ -1,5 +1,5 @@
 import type { Constructor } from "./contructor";
-import type { EventBus } from "./eventBus";
+import type { MessageBus } from "./messageBus";
 import { getMetadata } from "./metadata";
 
 // TypeScript's built-in type uses Function as upper type, which is too generic
@@ -7,21 +7,21 @@ import { getMetadata } from "./metadata";
 type ClassDecorator = <T extends Constructor<object>>(target: T) => T | void;
 
 /**
- * Class decorator that automatically subscribes to event topics based on method parameter decorators.
+ * Class decorator that automatically subscribes to topics based on method parameter decorators.
  *
  * This decorator inspects the decorated class looking for methods with topic-decorated parameters,
- * and subscribes to those topics using the provided {@link eventBus}.
+ * and subscribes to those topics using the provided {@link messageBus}.
  *
- * When an event is published, the decorated parameter's method is called with the event data.
- * If the class instance is garbage collected, the subscription is automatically disposed.
+ * When a message is published, the decorated parameter's method is called with the message data.
+ * If the class instance is garbage collected, the topic subscription is automatically disposed.
  *
- * @param eventBus The event bus instance to use for creating subscriptions.
+ * @param messageBus The message bus instance to use for creating subscriptions.
  *
  * @example
  * ```ts
- * const eventBus = createEventBus();
+ * const messageBus = createMessageBus();
  *
- * @AutoSubscribe(eventBus)
+ * @AutoSubscribe(messageBus)
  * class UserManager {
  *   onUserLogin(@LoginTopic login: UserLogin): void {
  *     // ...
@@ -29,7 +29,7 @@ type ClassDecorator = <T extends Constructor<object>>(target: T) => T | void;
  * }
  * ```
  */
-export function AutoSubscribe(eventBus: EventBus): ClassDecorator {
+export function AutoSubscribe(messageBus: MessageBus): ClassDecorator {
   return function (Class) {
     return class extends Class {
       constructor(...args: any[]) {
@@ -40,7 +40,7 @@ export function AutoSubscribe(eventBus: EventBus): ClassDecorator {
         const metadata = getMetadata(Class);
 
         for (const [methodKey, methodSub] of metadata.subscriptions.methods) {
-          const subscription = eventBus.subscribe(methodSub.topic, (data) => {
+          const subscription = messageBus.subscribe(methodSub.topic, (data) => {
             const deref = thisRef.deref();
 
             if (deref) {

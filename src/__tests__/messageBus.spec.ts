@@ -4,34 +4,34 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { AutoSubscribe } from "../autoSubscribe";
-import { createEventBus } from "../eventBus";
+import { createMessageBus } from "../messageBus";
 import { createTopic } from "../topic";
 
-describe("EventBus", () => {
-  let eventBus = createEventBus();
+describe("MessageBus", () => {
+  let messageBus = createMessageBus();
   const TestTopic = createTopic<string>("Test");
 
   afterEach(() => {
-    eventBus.dispose();
-    eventBus = createEventBus();
+    messageBus.dispose();
+    messageBus = createMessageBus();
   });
 
-  it("should publish an event", () => {
+  it("should publish a message", () => {
     let testData = "";
-    eventBus.subscribe(TestTopic, (data) => (testData = data));
-    eventBus.publish(TestTopic, "it works");
+    messageBus.subscribe(TestTopic, (data) => (testData = data));
+    messageBus.publish(TestTopic, "it works");
     expect(testData).toBe("it works");
   });
 
   it("should dispose subscription", () => {
     let testData = "";
-    eventBus.subscribe(TestTopic, (data) => (testData = data)).dispose();
-    eventBus.publish(TestTopic, "it works");
+    messageBus.subscribe(TestTopic, (data) => (testData = data)).dispose();
+    messageBus.publish(TestTopic, "it works");
     expect(testData).toBe("");
   });
 
   it("should subscribe via @AutoSubscribe", () => {
-    @AutoSubscribe(eventBus)
+    @AutoSubscribe(messageBus)
     class Example {
       data?: string;
 
@@ -41,7 +41,7 @@ describe("EventBus", () => {
     }
 
     const example = new Example();
-    eventBus.publish(TestTopic, "it works");
+    messageBus.publish(TestTopic, "it works");
     expect(example.data).toBe("it works");
   });
 
@@ -51,7 +51,7 @@ describe("EventBus", () => {
         constructor(@TestTopic _data: string) {}
       }
     }).toThrowErrorMatchingInlineSnapshot(
-      `[Error: [event-bus] decorator for Topic<Test> cannot be used on Example's constructor]`,
+      `[Error: [message-bus] decorator for Topic<Test> cannot be used on Example's constructor]`,
     );
   });
 
@@ -61,7 +61,7 @@ describe("EventBus", () => {
         static onTestTopic(@TestTopic _data: string): void {}
       }
     }).toThrowErrorMatchingInlineSnapshot(
-      `[Error: [event-bus] decorator for Topic<Test> cannot be used on static member Example.onTestTopic]`,
+      `[Error: [message-bus] decorator for Topic<Test> cannot be used on static member Example.onTestTopic]`,
     );
   });
 
@@ -73,47 +73,47 @@ describe("EventBus", () => {
         onTestTopic(@TestTopic _data: string, @TestTopic2 _data2: string): void {}
       }
     }).toThrowErrorMatchingInlineSnapshot(
-      `[Error: [event-bus] only a single topic subscription is allowed on Example.onTestTopic]`,
+      `[Error: [message-bus] only a single topic subscription is allowed on Example.onTestTopic]`,
     );
   });
 
   it("should throw if handler errors out", () => {
     expect(() => {
-      eventBus.subscribe(TestTopic, () => {
+      messageBus.subscribe(TestTopic, () => {
         throw new Error("some error occurred");
       });
 
-      eventBus.publish(TestTopic, "it works");
+      messageBus.publish(TestTopic, "it works");
     }).toThrowErrorMatchingInlineSnapshot(
       `
-      [Error: [event-bus] an event handler did not complete correctly
+      [Error: [message-bus] a message handler did not complete correctly
         [cause] some error occurred]
       `,
     );
   });
 
   it("should not throw if handler errors out and safePublishing is true", () => {
-    const eventBus = createEventBus({
+    const messageBus = createMessageBus({
       safePublishing: true,
     });
 
-    eventBus.subscribe(TestTopic, () => {
+    messageBus.subscribe(TestTopic, () => {
       throw new Error("some error occurred");
     });
 
     // Should not let errors escape, but print to console.error instead
-    eventBus.publish(TestTopic, "it works");
+    messageBus.publish(TestTopic, "it works");
   });
 
   it("should not throw if handler errors out and safePublishing is true", () => {
-    eventBus.subscribe(TestTopic, () => {});
+    messageBus.subscribe(TestTopic, () => {});
 
     // We can call dispose() as many times we want
-    eventBus.dispose();
-    eventBus.dispose();
+    messageBus.dispose();
+    messageBus.dispose();
 
-    expect(() => eventBus.publish(TestTopic, "it does not work")).toThrowErrorMatchingInlineSnapshot(
-      `[Error: [event-bus] the event bus is disposed]`,
+    expect(() => messageBus.publish(TestTopic, "it does not work")).toThrowErrorMatchingInlineSnapshot(
+      `[Error: [message-bus] the message bus is disposed]`,
     );
   });
 });

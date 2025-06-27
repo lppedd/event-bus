@@ -5,13 +5,13 @@ import { error } from "./errors";
 import { getMetadata } from "./metadata";
 
 /**
- * An identifier used to categorize events in the event bus.
+ * An identifier used to categorize messages in the message bus.
  */
 export interface Topic<T = any> {
   /**
    * A human-readable name for the topic, useful for debugging and logging.
    */
-  readonly topicName: string;
+  readonly displayName: string;
 
   /**
    * @internal
@@ -25,17 +25,17 @@ export interface Topic<T = any> {
 }
 
 /**
- * Creates a new {@link Topic} that can be used to publish or subscribe to events.
+ * Creates a new {@link Topic} that can be used to publish or subscribe to messages.
  *
  * @example
  * ```ts
  * const EnvTopic = createTopic<string>("Env");
- * eventBus.subscribe(EnvTopic, (data) => console.log(data));
- * eventBus.publish(EnvTopic, "production"); // => 'production' logged to the console
+ * messageBus.subscribe(EnvTopic, (data) => console.log(data));
+ * messageBus.publish(EnvTopic, "production"); // => 'production' logged to the console
  * ```
  */
-export function createTopic<T>(topicName: string): Topic<T> {
-  const topicDebugName = `Topic<${topicName}>`;
+export function createTopic<T>(displayName: string): Topic<T> {
+  const topicDebugName = `Topic<${displayName}>`;
   const topicDecorator: ParameterDecorator = function (
     target: any,
     propertyKey: string | symbol | undefined,
@@ -62,13 +62,13 @@ export function createTopic<T>(topicName: string): Topic<T> {
     }
 
     methods.set(propertyKey, {
-      // @ts-expect-error the topicName property is defined later in the createTopic function
+      // @ts-expect-error the displayName property is defined later in the createTopic function
       topic: topicDecorator,
       index: parameterIndex,
     });
   };
 
-  (topicDecorator as any).topicName = topicDebugName;
+  (topicDecorator as any).displayName = topicDebugName;
   (topicDecorator as any).toString = () => topicDebugName;
   return topicDecorator as Topic<T>;
 }

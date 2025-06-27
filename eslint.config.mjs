@@ -7,22 +7,22 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    name: "event-bus/languages",
+    name: "message-bus/languages",
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.es2022,
     },
   },
   {
-    name: "event-bus/ignores",
+    name: "message-bus/ignores",
     ignores: ["coverage", "dist", "docs"],
   },
   {
-    name: "event-bus/files",
+    name: "message-bus/files",
     files: ["**/*.?(c|m){j,t}s"],
   },
   {
-    name: "event-bus/eslint",
+    name: "message-bus/eslint",
     extends: [
       {
         name: "eslint/recommended",
@@ -43,7 +43,7 @@ export default tseslint.config(
     },
   },
   {
-    name: "event-bus/typescript",
+    name: "message-bus/typescript",
     extends: tseslint.configs.recommendedTypeChecked,
     languageOptions: {
       parserOptions: {

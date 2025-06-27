@@ -1,15 +1,15 @@
 import { error } from "./errors";
-import type { EventBus, EventBusOptions, EventHandler, Subscription } from "./eventBus";
+import type { MessageBus, MessageBusOptions, MessageHandler, Subscription } from "./messageBus";
 import { SubscriptionRegistry } from "./registry";
 import type { Topic } from "./topic";
 
 // @internal
-export class EventBusImpl implements EventBus {
+export class MessageBusImpl implements MessageBus {
   private readonly myRegistry = new SubscriptionRegistry();
-  private readonly myOptions: EventBusOptions;
+  private readonly myOptions: MessageBusOptions;
   private myDisposed: boolean = false;
 
-  constructor(options?: Partial<EventBusOptions>) {
+  constructor(options?: Partial<MessageBusOptions>) {
     this.myOptions = {
       safePublishing: false,
       ...options,
@@ -21,11 +21,11 @@ export class EventBusImpl implements EventBus {
     const handlers = this.myRegistry.get(topic);
 
     if (handlers) {
-      this.publishEvent(handlers, data);
+      this.publishMessage(handlers, data);
     }
   }
 
-  subscribe<T>(topic: Topic<T>, handler: EventHandler<T>): Subscription {
+  subscribe<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription {
     this.checkDisposed();
     this.myRegistry.set(topic, handler);
     const handlerRef = new WeakRef(handler);
@@ -45,7 +45,7 @@ export class EventBusImpl implements EventBus {
     this.myRegistry.clear();
   }
 
-  private publishEvent<T>(handlers: EventHandler[], data: T): void {
+  private publishMessage<T>(handlers: MessageHandler[], data: T): void {
     for (let i = 0; i < handlers.length; i++) {
       const handler = handlers[i]!;
 
@@ -53,7 +53,7 @@ export class EventBusImpl implements EventBus {
         handler(data);
       } catch (e) {
         if (!this.myOptions.safePublishing) {
-          error("an event handler did not complete correctly", e);
+          error("a message handler did not complete correctly", e);
         }
 
         console.error(e);
@@ -63,7 +63,7 @@ export class EventBusImpl implements EventBus {
 
   private checkDisposed(): void {
     if (this.myDisposed) {
-      error("the event bus is disposed");
+      error("the message bus is disposed");
     }
   }
 }

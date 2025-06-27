@@ -1,9 +1,9 @@
-import { EventBusImpl } from "./eventBusImpl";
+import { MessageBusImpl } from "./messageBusImpl";
 import type { Topic } from "./topic";
 
-export interface EventBusOptions {
+export interface MessageBusOptions {
   /**
-   * If `true`, errors thrown by event handlers are caught and logged
+   * If `true`, errors thrown by message handlers are caught and logged
    * to `console.error` instead of being allowed to propagate.
    *
    * @defaultValue false
@@ -11,7 +11,7 @@ export interface EventBusOptions {
   readonly safePublishing: boolean;
 }
 
-export type EventHandler<T = any> = (data: T) => void;
+export type MessageHandler<T = any> = (data: T) => void;
 
 /**
  * Represents an active subscription to a {@link Topic}.
@@ -23,16 +23,16 @@ export interface Subscription {
 }
 
 /**
- * The event bus API.
+ * The message bus API.
  */
-export interface EventBus {
+export interface MessageBus {
   /**
-   * Publishes a new event without data for the given topic.
+   * Publishes a new message without data.
    */
   publish(topic: Topic<void>): void;
 
   /**
-   * Publishes a new event with associated data for the given topic.
+   * Publishes a new message with associated data.
    */
   publish<T>(topic: Topic<T>, data: T): void;
 
@@ -41,10 +41,10 @@ export interface EventBus {
    *
    * The returned subscription can be disposed to unsubscribe from the topic.
    */
-  subscribe<T>(topic: Topic<T>, handler: EventHandler<T>): Subscription;
+  subscribe<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
 
   /**
-   * Disposes the event bus, removing all active subscriptions.
+   * Disposes the message bus, removing all active subscriptions.
    *
    * After disposal, no further publishing or subscribing is possible.
    */
@@ -52,8 +52,8 @@ export interface EventBus {
 }
 
 /**
- * Creates a new event bus.
+ * Creates a new message bus.
  */
-export function createEventBus(options?: Partial<EventBusOptions>): EventBus {
-  return new EventBusImpl(options);
+export function createMessageBus(options?: Partial<MessageBusOptions>): MessageBus {
+  return new MessageBusImpl(options);
 }
