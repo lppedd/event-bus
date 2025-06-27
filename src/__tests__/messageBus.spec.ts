@@ -1,7 +1,7 @@
 // noinspection JSUnusedLocalSymbols,JSUnusedGlobalSymbols
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AutoSubscribe } from "../autoSubscribe";
 import { createMessageBus } from "../messageBus";
@@ -11,7 +11,12 @@ describe("MessageBus", () => {
   let messageBus = createMessageBus();
   const TestTopic = createTopic<string>("Test");
 
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
   afterEach(() => {
+    vi.useRealTimers();
     messageBus.dispose();
     messageBus = createMessageBus();
   });
@@ -20,6 +25,8 @@ describe("MessageBus", () => {
     let testData = "";
     messageBus.subscribe(TestTopic, (data) => (testData = data));
     messageBus.publish(TestTopic, "it works");
+
+    vi.runAllTimers();
     expect(testData).toBe("it works");
   });
 
@@ -27,6 +34,8 @@ describe("MessageBus", () => {
     let testData = "";
     messageBus.subscribe(TestTopic, (data) => (testData = data)).dispose();
     messageBus.publish(TestTopic, "it works");
+
+    vi.runAllTimers();
     expect(testData).toBe("");
   });
 
@@ -42,6 +51,8 @@ describe("MessageBus", () => {
 
     const example = new Example();
     messageBus.publish(TestTopic, "it works");
+
+    vi.runAllTimers();
     expect(example.data).toBe("it works");
   });
 
@@ -84,6 +95,7 @@ describe("MessageBus", () => {
       });
 
       messageBus.publish(TestTopic, "it works");
+      vi.runAllTimers();
     }).toThrowErrorMatchingInlineSnapshot(
       `
       [Error: [message-bus] a message handler did not complete correctly
@@ -103,6 +115,7 @@ describe("MessageBus", () => {
 
     // Should not let errors escape, but print to console.error instead
     messageBus.publish(TestTopic, "it works");
+    vi.runAllTimers();
   });
 
   it("should not throw if handler errors out and safePublishing is true", () => {
@@ -112,9 +125,10 @@ describe("MessageBus", () => {
     messageBus.dispose();
     messageBus.dispose();
 
-    expect(() => messageBus.publish(TestTopic, "it does not work")).toThrowErrorMatchingInlineSnapshot(
-      `[Error: [message-bus] the message bus is disposed]`,
-    );
+    expect(() => {
+      messageBus.publish(TestTopic, "it does not work");
+      vi.runAllTimers();
+    }).toThrowErrorMatchingInlineSnapshot(`[Error: [message-bus] the message bus is disposed]`);
   });
 
   it("should dispose", () => {

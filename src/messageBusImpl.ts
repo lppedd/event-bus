@@ -7,6 +7,9 @@ import type { Topic } from "./topic";
 export class MessageBusImpl implements MessageBus {
   private readonly myRegistry = new SubscriptionRegistry();
   private readonly myOptions: MessageBusOptions;
+  private readonly myPublishQueue: (() => void)[] = [];
+
+  private myPublishing: boolean = false;
   private myDisposed: boolean = false;
 
   constructor(options?: Partial<MessageBusOptions>) {
@@ -25,7 +28,12 @@ export class MessageBusImpl implements MessageBus {
     const handlers = this.myRegistry.get(topic);
 
     if (handlers) {
-      this.publishMessage(handlers, data);
+      this.myPublishQueue.push(() => this.publishMessage(handlers, data));
+
+      if (!this.myPublishing) {
+        this.myPublishing = true;
+        queueMicrotask(() => this.drainPublishQueue());
+      }
     }
   }
 
@@ -63,6 +71,15 @@ export class MessageBusImpl implements MessageBus {
         console.error(e);
       }
     }
+  }
+
+  private drainPublishQueue(): void {
+    while (this.myPublishQueue.length > 0) {
+      const next = this.myPublishQueue.shift()!;
+      next();
+    }
+
+    this.myPublishing = false;
   }
 
   private checkDisposed(): void {
