@@ -32,9 +32,7 @@ export interface Topic<T = any> {
    */
   readonly broadcastDirection: BroadcastDirection;
 
-  /**
-   * @internal
-   */
+  // Decorator's callable signature
   (...args: any[]): void;
 
   /**
