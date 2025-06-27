@@ -22,21 +22,21 @@ describe("MessageBus", () => {
   });
 
   it("should publish a message", () => {
-    let testData = "";
-    messageBus.subscribe(TestTopic, (data) => (testData = data));
+    const handler = vi.fn(() => {});
+    messageBus.subscribe(TestTopic, handler);
     messageBus.publish(TestTopic, "it works");
-
     vi.runAllTimers();
-    expect(testData).toBe("it works");
+
+    expect(handler).toHaveBeenCalledExactlyOnceWith("it works");
   });
 
   it("should dispose subscription", () => {
-    let testData = "";
-    messageBus.subscribe(TestTopic, (data) => (testData = data)).dispose();
+    const handler = vi.fn(() => {});
+    messageBus.subscribe(TestTopic, handler).dispose();
     messageBus.publish(TestTopic, "it works");
-
     vi.runAllTimers();
-    expect(testData).toBe("");
+
+    expect(handler).toHaveBeenCalledTimes(0);
   });
 
   it("should subscribe via @AutoSubscribe", () => {
@@ -78,10 +78,9 @@ describe("MessageBus", () => {
 
   it("should throw if multiple topics per method", () => {
     expect(() => {
-      const TestTopic2 = createTopic<string>("Test2");
-
+      const AnotherTestTopic = createTopic<string>("AnotherTestTopic");
       class Example {
-        onTestTopic(@TestTopic _data: string, @TestTopic2 _data2: string): void {}
+        onTestTopic(@TestTopic _data1: string, @AnotherTestTopic _data2: string): void {}
       }
     }).toThrowErrorMatchingInlineSnapshot(
       `[Error: [message-bus] only a single topic subscription is allowed on Example.onTestTopic]`,
@@ -143,46 +142,53 @@ describe("MessageBus", () => {
     const childHandler2 = vi.fn(() => {});
     childBus2.subscribe(TestTopic, childHandler2);
 
+    const childBus3 = childBus2.createChildBus();
+    const childHandler3 = vi.fn(() => {});
+    childBus3.subscribe(TestTopic, childHandler3);
+
     messageBus.publish(TestTopic, "it works");
     vi.runAllTimers();
 
-    expect(handler).toHaveBeenCalledOnce();
-    expect(childHandler1).toHaveBeenCalledOnce();
-    expect(childHandler2).toHaveBeenCalledOnce();
-
-    expect(handler).toHaveBeenCalledWith("it works");
-    expect(childHandler1).toHaveBeenCalledWith("it works");
-    expect(childHandler2).toHaveBeenCalledWith("it works");
-
+    expect(handler).toHaveBeenCalledExactlyOnceWith("it works");
+    expect(childHandler1).toHaveBeenCalledExactlyOnceWith("it works");
+    expect(childHandler2).toHaveBeenCalledExactlyOnceWith("it works");
+    expect(childHandler3).toHaveBeenCalledExactlyOnceWith("it works");
     expect(childHandler1).toHaveBeenCalledAfter(handler);
     expect(childHandler2).toHaveBeenCalledAfter(handler);
+    expect(childHandler3).toHaveBeenCalledAfter(childHandler1);
+    expect(childHandler3).toHaveBeenCalledAfter(childHandler2);
   });
 
   it("should propagate message to parent bus (not recursively)", () => {
-    const topic = createTopic<string>("ParentTestTopic", "parent");
-
+    const ParentTestTopic = createTopic<string>("ParentTestTopic", "parent");
     const handler = vi.fn(() => {});
-    messageBus.subscribe(topic, handler);
+    messageBus.subscribe(ParentTestTopic, handler);
 
     const childBus = messageBus.createChildBus();
     const childHandler = vi.fn(() => {});
-    childBus.subscribe(topic, childHandler);
+    childBus.subscribe(ParentTestTopic, childHandler);
 
-    childBus.publish(topic, "it works");
+    const childBus2 = childBus.createChildBus();
+    const childHandler2 = vi.fn(() => {});
+    childBus2.subscribe(ParentTestTopic, childHandler2);
+
+    childBus2.publish(ParentTestTopic, "it works");
     vi.runAllTimers();
 
-    expect(handler).toHaveBeenCalledOnce();
-    expect(childHandler).toHaveBeenCalledOnce();
-
-    expect(handler).toHaveBeenCalledWith("it works");
-    expect(childHandler).toHaveBeenCalledWith("it works");
-
-    expect(childHandler).toHaveBeenCalledBefore(handler);
+    expect(childHandler2).toHaveBeenCalledExactlyOnceWith("it works");
+    expect(childHandler).toHaveBeenCalledExactlyOnceWith("it works");
+    expect(childHandler).toHaveBeenCalledAfter(childHandler2);
+    expect(handler).toHaveBeenCalledTimes(0);
   });
 
-  it("should dispose", () => {
+  it("should dispose itself and children", () => {
+    const childBus = messageBus.createChildBus();
     expect(messageBus.isDisposed).toBe(false);
+    expect(childBus.isDisposed).toBe(false);
+
     messageBus.dispose();
+
     expect(messageBus.isDisposed).toBe(true);
+    expect(childBus.isDisposed).toBe(true);
   });
 });
