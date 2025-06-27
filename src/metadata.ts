@@ -1,4 +1,3 @@
-// @internal
 import type { Constructor } from "./contructor";
 import type { Topic } from "./topic";
 
