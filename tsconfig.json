@@ -5,6 +5,7 @@
     "strict": true,
     "stripInternal": true,
     "esModuleInterop": true,
+    "erasableSyntaxOnly": true,
     "isolatedDeclarations": true,
     "verbatimModuleSyntax": true,
     "experimentalDecorators": true,
