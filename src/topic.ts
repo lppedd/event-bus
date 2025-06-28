@@ -11,7 +11,7 @@ import { getMetadata } from "./metadata";
  * registered on the bus where `publish()` is called.
  *
  * Then, if the direction is:
- * - `children`: the message is also propagated to all child buses (recursively)
+ * - `children`: the message is also propagated to all child buses recursively
  * - `parent`: the message is also propagated to the **immediate** parent bus
  */
 export type BroadcastDirection = "children" | "parent";

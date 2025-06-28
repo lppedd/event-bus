@@ -1,8 +1,6 @@
 <!--suppress HtmlDeprecatedAttribute -->
-<div align="center">
-  <h1>message-bus</h1>
-  <p>Minimal, type-safe pub-sub message bus for TypeScript and JavaScript</p>
-</div>
+<h1 align="center">message-bus</h1>
+<p align="center">Minimal, type-safe pub-sub message bus for TypeScript and JavaScript</p>
 
 ## License
 

@@ -15,8 +15,6 @@ type ClassDecorator = <T extends Constructor<object>>(target: T) => T | void;
  * When a message is published, the decorated parameter's method is called with the message data.
  * If the class instance is garbage collected, the topic subscription is automatically disposed.
  *
- * @param messageBus The message bus instance to use for creating subscriptions.
- *
  * @example
  * ```ts
  * const messageBus = createMessageBus();
@@ -28,6 +26,8 @@ type ClassDecorator = <T extends Constructor<object>>(target: T) => T | void;
  *   }
  * }
  * ```
+ *
+ * @param messageBus The message bus instance to use for creating subscriptions.
  */
 export function AutoSubscribe(messageBus: MessageBus | (() => MessageBus)): ClassDecorator {
   return function (Class) {
