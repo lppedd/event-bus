@@ -1,6 +1,6 @@
-import { AsyncIterableRegistration } from "./asyncIterableRegistration";
-import { error, tag } from "./errors";
+import { assert, error, tag } from "./errors";
 import { HandlerRegistration } from "./handlerRegistration";
+import { LazyAsyncRegistration } from "./lazyAsyncRegistration";
 import type {
   LazyAsyncSubscription,
   MessageBus,
@@ -8,11 +8,12 @@ import type {
   MessageHandler,
   Subscription,
 } from "./messageBus";
-import { type Registration, SubscriptionRegistry } from "./registry";
+import { SubscriptionRegistry } from "./registry";
 import type { Topic } from "./topic";
 
 // @internal
 export class MessageBusImpl implements MessageBus {
+  private readonly myParent?: MessageBusImpl;
   private readonly myOptions: MessageBusOptions;
   private readonly myRegistry = new SubscriptionRegistry();
   private readonly myChildren = new Set<MessageBusImpl>();
@@ -21,10 +22,8 @@ export class MessageBusImpl implements MessageBus {
   private myPublishing: boolean = false;
   private myDisposed: boolean = false;
 
-  constructor(
-    private readonly myParent: MessageBusImpl | undefined,
-    options?: Partial<MessageBusOptions>,
-  ) {
+  constructor(parent: MessageBusImpl | undefined, options?: Partial<MessageBusOptions>) {
+    this.myParent = parent;
     this.myOptions = {
       safePublishing: false,
       ...options,
@@ -55,13 +54,38 @@ export class MessageBusImpl implements MessageBus {
     }
   }
 
-  subscribe<T>(topic: Topic<T>): LazyAsyncSubscription<T>;
+  subscribe<T>(topic: Topic<T>, limit?: number): LazyAsyncSubscription<T>;
   subscribe<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
-  subscribe<T>(topic: Topic<T>, handler?: MessageHandler<T>): Subscription | LazyAsyncSubscription<T> {
+  subscribe<T>(topic: Topic<T>, limit: number, handler: MessageHandler<T>): Subscription;
+  subscribe<T>(
+    topic: Topic<T>,
+    limitOrHandler?: number | MessageHandler<T>,
+    handler?: MessageHandler<T>,
+  ): Subscription | LazyAsyncSubscription<T> {
     this.checkDisposed();
-    return handler //
-      ? this.subscribeWithHandler(topic, handler)
-      : this.subscribeWithAsyncIterable(topic);
+
+    if (typeof limitOrHandler === "function") {
+      return this.registerHandler(topic, limitOrHandler, -1);
+    }
+
+    if (typeof limitOrHandler === "number" && typeof handler === "function") {
+      assert(limitOrHandler > 0, "the limit value must be greater than 0");
+      return this.registerHandler(topic, handler, limitOrHandler);
+    }
+
+    assert(limitOrHandler === undefined || limitOrHandler > 0, "the limit value must be greater than 0");
+    return new LazyAsyncRegistration(this.myRegistry, topic, limitOrHandler ?? -1);
+  }
+
+  subscribeOnce<T>(topic: Topic<T>): Promise<T>;
+  subscribeOnce<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
+  subscribeOnce<T>(topic: Topic<T>, handler?: MessageHandler<T>): Subscription | Promise<T> {
+    if (typeof handler === "function") {
+      return this.registerHandler(topic, handler, 1);
+    }
+
+    const registration = new LazyAsyncRegistration(this.myRegistry, topic, 1);
+    return registration.single().finally(() => registration.dispose());
   }
 
   dispose(): void {
@@ -116,11 +140,9 @@ export class MessageBusImpl implements MessageBus {
       return;
     }
 
-    for (let i = 0; i < registrations.length; i++) {
-      const registration = registrations[i]!;
-
+    for (const registration of registrations) {
       try {
-        registration.__handler(data);
+        registration.handler(data);
       } catch (e) {
         if (!this.myOptions.safePublishing) {
           error("unhandled error in message handler", e);
@@ -142,14 +164,10 @@ export class MessageBusImpl implements MessageBus {
     this.myPublishing = false;
   }
 
-  private subscribeWithHandler<T>(topic: Topic<T>, handler: MessageHandler<T>): Registration {
-    const registration = new HandlerRegistration(this.myRegistry, topic, handler);
+  private registerHandler<T>(topic: Topic<T>, handler: MessageHandler<T>, limit: number): Subscription {
+    const registration = new HandlerRegistration(this.myRegistry, topic, handler, limit);
     this.myRegistry.set(topic, registration);
     return registration;
-  }
-
-  private subscribeWithAsyncIterable<T>(topic: Topic<T>): AsyncIterableRegistration<T> {
-    return new AsyncIterableRegistration(this.myRegistry, topic);
   }
 
   private checkDisposed(): void {

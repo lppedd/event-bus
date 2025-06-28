@@ -3,9 +3,9 @@ import type { Topic } from "./topic";
 
 // @internal
 export interface Registration extends Subscription {
-  __isDisposed: boolean;
-  __remaining: number;
-  __handler: MessageHandler;
+  isDisposed: boolean;
+  remaining: number;
+  handler: MessageHandler;
 }
 
 // @internal

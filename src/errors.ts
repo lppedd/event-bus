@@ -1,4 +1,11 @@
 // @internal
+export function assert(condition: unknown, message: string): asserts condition {
+  if (!condition) {
+    throw new Error(tag(message));
+  }
+}
+
+// @internal
 export function error(message: string, cause?: unknown): never {
   let msg = tag(message);
 

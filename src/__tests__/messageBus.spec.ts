@@ -213,7 +213,7 @@ describe("MessageBus", () => {
 
     // noinspection SpellCheckingInspection
     expect(str).toBe("onetwothree");
-    expect((subscription as any).__isDisposed).toBe(true);
+    expect((subscription as any).isDisposed).toBe(true);
   });
 
   it("should await single messages", async () => {
@@ -233,7 +233,7 @@ describe("MessageBus", () => {
 
     // noinspection SpellCheckingInspection
     expect(str).toBe("onetwo");
-    expect((subscription as any).__isDisposed).toBe(true);
+    expect((subscription as any).isDisposed).toBe(true);
   });
 
   it("should dispose itself and children", () => {

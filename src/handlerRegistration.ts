@@ -4,30 +4,35 @@ import type { Topic } from "./topic";
 
 // @internal
 export class HandlerRegistration<T> implements Registration {
-  __isDisposed: boolean = false;
-  __remaining: number = -1;
+  private readonly myRegistry: SubscriptionRegistry;
+  private readonly myTopic: Topic<T>;
+  private readonly myHandler: MessageHandler<T>;
 
-  constructor(
-    private readonly myRegistry: SubscriptionRegistry,
-    private readonly myTopic: Topic<T>,
-    private readonly myHandler: MessageHandler<T>,
-  ) {}
+  isDisposed: boolean = false;
+  remaining: number;
 
-  __handler = (data: T): void => {
-    if (this.__remaining === 0) {
+  constructor(registry: SubscriptionRegistry, topic: Topic<T>, handler: MessageHandler<T>, limit: number) {
+    this.myRegistry = registry;
+    this.myTopic = topic;
+    this.myHandler = handler;
+    this.remaining = limit;
+  }
+
+  handler = (data: T): void => {
+    if (this.remaining === 0) {
       this.dispose();
       return;
     }
 
-    if (this.__remaining > 0) {
-      this.__remaining--;
+    if (this.remaining > 0) {
+      this.remaining--;
     }
 
     this.myHandler(data);
   };
 
   dispose = (): void => {
-    this.__isDisposed = true;
+    this.isDisposed = true;
     this.myRegistry.delete(this.myTopic, this);
   };
 }
