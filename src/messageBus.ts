@@ -44,6 +44,11 @@ export interface Subscription {
  * or never awaits a message, no subscription is created.
  */
 export interface LazyAsyncSubscription<T> extends AsyncIterableIterator<T>, Subscription {
+  /**
+   * Awaits the next message published to the topic.
+   *
+   * Throws an error if the subscription was disposed before a message was received.
+   */
   readonly single: () => Promise<T>;
 }
 
