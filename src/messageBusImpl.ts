@@ -1,6 +1,14 @@
+import { AsyncIterableRegistration } from "./asyncIterableRegistration";
 import { error, tag } from "./errors";
-import type { MessageBus, MessageBusOptions, MessageHandler, Subscription } from "./messageBus";
-import { SubscriptionRegistry } from "./registry";
+import { HandlerRegistration } from "./handlerRegistration";
+import type {
+  LazyAsyncSubscription,
+  MessageBus,
+  MessageBusOptions,
+  MessageHandler,
+  Subscription,
+} from "./messageBus";
+import { type Registration, SubscriptionRegistry } from "./registry";
 import type { Topic } from "./topic";
 
 // @internal
@@ -47,19 +55,13 @@ export class MessageBusImpl implements MessageBus {
     }
   }
 
-  subscribe<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription {
+  subscribe<T>(topic: Topic<T>): LazyAsyncSubscription<T>;
+  subscribe<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
+  subscribe<T>(topic: Topic<T>, handler?: MessageHandler<T>): Subscription | LazyAsyncSubscription<T> {
     this.checkDisposed();
-    this.myRegistry.set(topic, handler);
-    const handlerRef = new WeakRef(handler);
-    return {
-      dispose: () => {
-        const deref = handlerRef.deref();
-
-        if (deref) {
-          this.myRegistry.delete(topic, deref);
-        }
-      },
-    };
+    return handler //
+      ? this.subscribeWithHandler(topic, handler)
+      : this.subscribeWithAsyncIterable(topic);
   }
 
   dispose(): void {
@@ -71,6 +73,11 @@ export class MessageBusImpl implements MessageBus {
 
     // Remove this bus from the parent's child buses
     this.myParent?.myChildren?.delete(this);
+
+    // Dispose all registrations (a.k.a. subscriptions) created by this bus
+    for (const registration of this.myRegistry.values()) {
+      registration.dispose();
+    }
 
     // Dispose child buses
     for (const child of this.myChildren) {
@@ -103,17 +110,17 @@ export class MessageBusImpl implements MessageBus {
   }
 
   private publishMessageToHandlers<T>(topic: Topic<T>, data: T): void {
-    const handlers = this.myRegistry.get(topic);
+    const registrations = this.myRegistry.get(topic);
 
-    if (!handlers) {
+    if (!registrations) {
       return;
     }
 
-    for (let i = 0; i < handlers.length; i++) {
-      const handler = handlers[i]!;
+    for (let i = 0; i < registrations.length; i++) {
+      const registration = registrations[i]!;
 
       try {
-        handler(data);
+        registration.__handler(data);
       } catch (e) {
         if (!this.myOptions.safePublishing) {
           error("unhandled error in message handler", e);
@@ -133,6 +140,16 @@ export class MessageBusImpl implements MessageBus {
     }
 
     this.myPublishing = false;
+  }
+
+  private subscribeWithHandler<T>(topic: Topic<T>, handler: MessageHandler<T>): Registration {
+    const registration = new HandlerRegistration(this.myRegistry, topic, handler);
+    this.myRegistry.set(topic, registration);
+    return registration;
+  }
+
+  private subscribeWithAsyncIterable<T>(topic: Topic<T>): AsyncIterableRegistration<T> {
+    return new AsyncIterableRegistration(this.myRegistry, topic);
   }
 
   private checkDisposed(): void {

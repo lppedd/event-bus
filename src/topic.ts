@@ -38,7 +38,7 @@ export interface Topic<T = any> {
   /**
    * @internal
    */
-  readonly type: T;
+  readonly __type: T;
 }
 
 /**

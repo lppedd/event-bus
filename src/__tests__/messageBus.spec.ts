@@ -1,5 +1,5 @@
 // noinspection JSUnusedLocalSymbols,JSUnusedGlobalSymbols
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars,@typescript-eslint/no-unsafe-member-access */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -185,6 +185,55 @@ describe("MessageBus", () => {
     expect(childHandler).toHaveBeenCalledExactlyOnceWith("it works");
     expect(childHandler).toHaveBeenCalledAfter(childHandler2);
     expect(handler).toHaveBeenCalledTimes(0);
+  });
+
+  it("should receive messages asynchronously", async () => {
+    vi.useRealTimers();
+
+    let str = "";
+    const subscription = messageBus.subscribe(TestTopic);
+    const iterations = (async () => {
+      let i = 0;
+
+      for await (const message of subscription) {
+        str += message;
+
+        if (++i === 3) {
+          subscription.dispose();
+          break;
+        }
+      }
+    })();
+
+    messageBus.publish(TestTopic, "one");
+    messageBus.publish(TestTopic, "two");
+    messageBus.publish(TestTopic, "three");
+
+    await iterations;
+
+    // noinspection SpellCheckingInspection
+    expect(str).toBe("onetwothree");
+    expect((subscription as any).__isDisposed).toBe(true);
+  });
+
+  it("should await single messages", async () => {
+    vi.useRealTimers();
+
+    let str = "";
+    const subscription = messageBus.subscribe(TestTopic);
+    const singles = (async () => {
+      str += await subscription.single();
+      str += await subscription.single();
+      subscription.dispose();
+    })();
+
+    messageBus.publish(TestTopic, "one");
+    messageBus.publish(TestTopic, "two");
+    await singles;
+
+    // noinspection SpellCheckingInspection
+    expect(str).toBe("onetwo");
+    expect((subscription as any).__isDisposed).toBe(true);
   });
 
   it("should dispose itself and children", () => {

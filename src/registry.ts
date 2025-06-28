@@ -1,34 +1,45 @@
-import type { MessageHandler } from "./messageBus";
+import type { MessageHandler, Subscription } from "./messageBus";
 import type { Topic } from "./topic";
 
 // @internal
-export class SubscriptionRegistry {
-  private readonly myMap = new Map<Topic, MessageHandler[]>();
+export interface Registration extends Subscription {
+  __isDisposed: boolean;
+  __remaining: number;
+  __handler: MessageHandler;
+}
 
-  get(topic: Topic): MessageHandler[] | undefined {
+// @internal
+export class SubscriptionRegistry {
+  private readonly myMap = new Map<Topic, Registration[]>();
+
+  get(topic: Topic): Registration[] | undefined {
     return this.myMap.get(topic);
   }
 
-  set(topic: Topic, handler: MessageHandler): void {
-    let handlers = this.myMap.get(topic);
+  set(topic: Topic, registration: Registration): void {
+    let registrations = this.myMap.get(topic);
 
-    if (!handlers) {
-      this.myMap.set(topic, (handlers = []));
+    if (!registrations) {
+      this.myMap.set(topic, (registrations = []));
     }
 
-    handlers.push(handler);
+    registrations.push(registration);
   }
 
-  delete(topic: Topic, handler: MessageHandler): void {
-    const handlers = this.myMap.get(topic);
+  delete(topic: Topic, registration: Registration): void {
+    const registrations = this.myMap.get(topic);
 
-    if (handlers) {
-      const index = handlers.indexOf(handler);
+    if (registrations) {
+      const index = registrations.indexOf(registration);
 
       if (index > -1) {
-        handlers.splice(index, 1);
+        registrations.splice(index, 1);
       }
     }
+  }
+
+  values(): Registration[] {
+    return Array.from(this.myMap.values()).flat();
   }
 
   clear(): void {
