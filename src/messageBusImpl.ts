@@ -26,6 +26,9 @@ export class MessageBusImpl implements MessageBus {
     this.myParent = parent;
     this.myOptions = {
       safePublishing: false,
+      errorHandler: (e) => {
+        console.error(tag("caught unhandled error in message handler (safePublishing: true)."), e);
+      },
       ...options,
     };
   }
@@ -148,7 +151,7 @@ export class MessageBusImpl implements MessageBus {
           error("unhandled error in message handler", e);
         }
 
-        console.error(tag("caught unhandled error in message handler (safePublishing: true)."), e);
+        this.myOptions.errorHandler(e);
       }
     }
   }

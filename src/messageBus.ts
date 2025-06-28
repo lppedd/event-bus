@@ -3,12 +3,22 @@ import type { Topic } from "./topic";
 
 export interface MessageBusOptions {
   /**
-   * If `true`, errors thrown by message handlers are caught and logged
-   * to `console.error` instead of being allowed to propagate.
+   * If `true`, errors thrown by message handlers are caught and sent
+   * to the `errorHandler` instead of being allowed to propagate.
+   *
+   * The default `errorHandler` prints to `console.error`.
    *
    * @defaultValue false
    */
   readonly safePublishing: boolean;
+
+  /**
+   * A handler for caught unhandled errors from message handlers,
+   * called when `safePublishing` is true.
+   *
+   * @defaultValue (e) => console.error(e)
+   */
+  readonly errorHandler: (e: unknown) => void;
 }
 
 /**
