@@ -23,11 +23,23 @@ export interface MessageBusOptions {
 
 /**
  * Represents an active subscription to a {@link Topic}.
- *
- * Call {@link dispose} to unsubscribe from the topic.
  */
 export interface Subscription {
+  /**
+   * Sets the priority value for this subscription.
+   * Higher priority subscriptions are notified before lower priority ones.
+   *
+   * The default priority value is `1`.
+   *
+   * @param priority A priority value, where a **lower** number means **higher** priority.
+   */
   readonly setPriority: (priority: number) => void;
+
+  /**
+   * Disposes the subscription, unsubscribing from the topic.
+   *
+   * After disposal, the subscription will no longer receive messages.
+   */
   readonly dispose: () => void;
 }
 
