@@ -254,6 +254,37 @@ describe("MessageBus", () => {
     expect(handler3).toHaveBeenCalledBefore(handler2);
   });
 
+  it("should listen to topic messages", () => {
+    const listener = vi.fn((_topic, _data) => {});
+    messageBus.addListener(listener);
+
+    const childBus = messageBus.createChildBus();
+    const childListener = vi.fn((_topic, _data) => {});
+    childBus.addListener(childListener);
+
+    messageBus.publish(TestTopic, "three");
+    messageBus.publish(TestTopic, "four");
+    vi.runAllTimers();
+
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenNthCalledWith(1, TestTopic, "three");
+    expect(listener).toHaveBeenNthCalledWith(2, TestTopic, "four");
+
+    // Only listeners added to the bus where publish() is invoked must be notified.
+    // Listeners of child buses must not be notified.
+    expect(childListener).toHaveBeenCalledTimes(0);
+
+    // Remove the listener and publish() again
+    listener.mockClear();
+    messageBus.removeListener(listener);
+
+    messageBus.publish(TestTopic, "five");
+    vi.runAllTimers();
+
+    expect(listener).toHaveBeenCalledTimes(0);
+    expect(childListener).toHaveBeenCalledTimes(0);
+  });
+
   it("should dispose itself and children", () => {
     const childBus = messageBus.createChildBus();
     expect(messageBus.isDisposed).toBe(false);

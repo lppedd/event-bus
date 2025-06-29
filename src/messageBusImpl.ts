@@ -6,6 +6,7 @@ import type {
   MessageBus,
   MessageBusOptions,
   MessageHandler,
+  MessageListener,
   Subscription,
 } from "./messageBus";
 import { SubscriptionRegistry } from "./registry";
@@ -16,6 +17,7 @@ export class MessageBusImpl implements MessageBus {
   private readonly myParent?: MessageBusImpl;
   private readonly myOptions: MessageBusOptions;
   private readonly myRegistry = new SubscriptionRegistry();
+  private readonly myListeners = new Set<MessageListener>();
   private readonly myChildren = new Set<MessageBusImpl>();
   private readonly myPublishQueue: (() => void)[] = [];
 
@@ -47,14 +49,8 @@ export class MessageBusImpl implements MessageBus {
     return child;
   }
 
-  publish<T>(topic: Topic<T>, data?: T, /* @internal */ stopHere?: boolean): void {
-    this.checkDisposed();
-    this.myPublishQueue.push(() => this.publishMessage(topic, data, stopHere));
-
-    if (!this.myPublishing) {
-      this.myPublishing = true;
-      queueMicrotask(() => this.drainPublishQueue());
-    }
+  publish<T>(topic: Topic<T>, data?: T): void {
+    this.publishImpl(topic, data, true, true);
   }
 
   subscribe<T>(topic: Topic<T>, limit?: number): LazyAsyncSubscription<T>;
@@ -91,6 +87,14 @@ export class MessageBusImpl implements MessageBus {
     return registration.single().finally(() => registration.dispose());
   }
 
+  addListener(listener: MessageListener): void {
+    this.myListeners.add(listener);
+  }
+
+  removeListener(listener: MessageListener): void {
+    this.myListeners.delete(listener);
+  }
+
   dispose(): void {
     if (this.myDisposed) {
       return;
@@ -113,23 +117,46 @@ export class MessageBusImpl implements MessageBus {
 
     this.myChildren.clear();
     this.myRegistry.clear();
+    this.myListeners.clear();
   }
 
-  private publishMessage<T>(topic: Topic<T>, data: T | undefined, stopHere?: boolean): void {
+  private publishImpl<T>(topic: Topic<T>, data: T | undefined, broadcast: boolean, listeners: boolean): void {
+    this.checkDisposed();
+    this.myPublishQueue.push(() => this.publishMessage(topic, data, broadcast, listeners));
+
+    if (!this.myPublishing) {
+      this.myPublishing = true;
+      queueMicrotask(() => this.drainPublishQueue());
+    }
+  }
+
+  private publishMessage<T>(
+    topic: Topic<T>,
+    data: T | undefined,
+    broadcast: boolean,
+    listeners: boolean,
+  ): void {
     // Keep in mind that publish() will queue the task, so child buses,
     // or the parent bus depending on the broadcasting direction,
     // will receive the message after this bus
-    if (!stopHere) {
+    if (broadcast) {
       switch (topic.broadcastDirection) {
         case "children":
           for (const child of this.myChildren) {
-            child.publish(topic, data);
+            child.publishImpl(topic, data, true, false);
           }
 
           break;
         case "parent":
-          this.myParent?.publish(topic, data, true);
+          this.myParent?.publishImpl(topic, data, false, false);
           break;
+      }
+    }
+
+    if (listeners) {
+      // Listeners are invoked in the order they have been added
+      for (const listener of this.myListeners) {
+        listener(topic, data);
       }
     }
 
@@ -139,12 +166,12 @@ export class MessageBusImpl implements MessageBus {
   private publishMessageToHandlers<T>(topic: Topic<T>, data: T): void {
     const registrations = this.myRegistry.get(topic);
 
-    if (!registrations) {
+    if (!registrations || registrations.length === 0) {
       return;
     }
 
     // Sort registrations by priority.
-    // A lower priority value means being called first.
+    // A lower priority value means being invoked first.
     registrations.sort((a, b) => a.priority - b.priority);
 
     for (const registration of registrations) {

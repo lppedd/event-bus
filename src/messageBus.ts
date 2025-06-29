@@ -66,6 +66,7 @@ export interface LazyAsyncSubscription<T> extends AsyncIterableIterator<T>, Subs
 }
 
 export type MessageHandler<T = any> = (data: T) => void;
+export type MessageListener = (topic: Topic, data: any) => void;
 
 /**
  * The message bus API.
@@ -230,6 +231,25 @@ export interface MessageBus {
    * @param handler A callback invoked on the next topic message.
    */
   subscribeOnce<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
+
+  /**
+   * Adds a message listener that will be notified of every message
+   * published on this message bus, regardless of topic.
+   *
+   * Listeners are invoked **before** any topic-specific subscribers.
+   * This allows observing messages even if no subscriber exists or if
+   * a subscriber throws an unrecoverable error.
+   *
+   * @param listener A callback invoked with the topic and message data.
+   */
+  addListener(listener: MessageListener): void;
+
+  /**
+   * Removes a previously added message listener.
+   *
+   * @param listener The listener to remove.
+   */
+  removeListener(listener: MessageListener): void;
 
   /**
    * Disposes the message bus, all its child buses, and all active subscriptions.

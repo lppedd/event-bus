@@ -4,6 +4,7 @@ export type {
   MessageBus,
   MessageBusOptions,
   MessageHandler,
+  MessageListener,
   Subscription,
 } from "./messageBus";
 export { createMessageBus } from "./messageBus";
