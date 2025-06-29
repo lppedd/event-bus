@@ -6,6 +6,7 @@ export interface MethodSubscription {
   // The index of the annotated parameter (zero-based)
   readonly index: number;
   readonly topic: Topic;
+  readonly priority: number;
 }
 
 // @internal

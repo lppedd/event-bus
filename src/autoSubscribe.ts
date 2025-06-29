@@ -52,6 +52,8 @@ export function AutoSubscribe(messageBus: MessageBus | (() => MessageBus)): Clas
               subscription.dispose();
             }
           });
+
+          subscription.setPriority(methodSub.priority);
         }
       }
     };

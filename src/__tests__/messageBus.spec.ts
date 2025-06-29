@@ -44,7 +44,7 @@ describe("MessageBus", () => {
     class Example {
       data?: string;
 
-      onTestTopic(@TestTopic data: string): void {
+      onTestTopic(@TestTopic() data: string): void {
         this.data = data;
       }
     }
@@ -59,7 +59,7 @@ describe("MessageBus", () => {
   it("should throw if topic decorator is placed on constructor", () => {
     expect(() => {
       class Example {
-        constructor(@TestTopic _data: string) {}
+        constructor(@TestTopic() _data: string) {}
       }
     }).toThrowErrorMatchingInlineSnapshot(
       `[Error: [message-bus] decorator for Topic<Test> cannot be used on Example's constructor]`,
@@ -69,7 +69,7 @@ describe("MessageBus", () => {
   it("should throw if topic decorator is placed on static method", () => {
     expect(() => {
       class Example {
-        static onTestTopic(@TestTopic _data: string): void {}
+        static onTestTopic(@TestTopic() _data: string): void {}
       }
     }).toThrowErrorMatchingInlineSnapshot(
       `[Error: [message-bus] decorator for Topic<Test> cannot be used on static member Example.onTestTopic]`,
@@ -80,7 +80,7 @@ describe("MessageBus", () => {
     expect(() => {
       const AnotherTestTopic = createTopic<string>("AnotherTestTopic");
       class Example {
-        onTestTopic(@TestTopic _data1: string, @AnotherTestTopic _data2: string): void {}
+        onTestTopic(@TestTopic() _data1: string, @AnotherTestTopic() _data2: string): void {}
       }
     }).toThrowErrorMatchingInlineSnapshot(
       `[Error: [message-bus] only a single topic subscription is allowed on Example.onTestTopic]`,
@@ -234,6 +234,24 @@ describe("MessageBus", () => {
     // noinspection SpellCheckingInspection
     expect(str).toBe("onetwo");
     expect((subscription as any).isDisposed).toBe(true);
+  });
+
+  it("should consider subscription priority", () => {
+    const handler1 = vi.fn(() => {});
+    messageBus.subscribe(TestTopic, handler1).setPriority(2);
+
+    const handler2 = vi.fn(() => {});
+    messageBus.subscribe(TestTopic, handler2);
+
+    const handler3 = vi.fn(() => {});
+    messageBus.subscribe(TestTopic, handler3).setPriority(0);
+
+    messageBus.publish(TestTopic, "one");
+    vi.runAllTimers();
+
+    expect(handler2).toHaveBeenCalledBefore(handler1);
+    expect(handler3).toHaveBeenCalledBefore(handler1);
+    expect(handler3).toHaveBeenCalledBefore(handler2);
   });
 
   it("should dispose itself and children", () => {

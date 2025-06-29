@@ -27,6 +27,7 @@ export interface MessageBusOptions {
  * Call {@link dispose} to unsubscribe from the topic.
  */
 export interface Subscription {
+  readonly setPriority: (priority: number) => void;
   readonly dispose: () => void;
 }
 

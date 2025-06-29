@@ -3,6 +3,7 @@
 import type { Constructor } from "./contructor";
 import { error } from "./errors";
 import { getMetadata } from "./metadata";
+import { defaultPriority } from "./registry";
 
 /**
  * The broadcasting direction for a topic.
@@ -33,7 +34,7 @@ export interface Topic<T = any> {
   readonly broadcastDirection: BroadcastDirection;
 
   // Decorator's callable signature
-  (...args: any[]): void;
+  (priority?: number): ParameterDecorator;
 
   /**
    * @internal
@@ -59,40 +60,37 @@ export function createTopic<T>(
   broadcastDirection: BroadcastDirection = "children",
 ): Topic<T> {
   const topicDebugName = `Topic<${displayName}>`;
-  const topicDecorator: ParameterDecorator = function (
-    target: any,
-    propertyKey: string | symbol | undefined,
-    parameterIndex: number,
-  ): void {
-    // Error out if the topic decorator has been applied to a static method
-    if (propertyKey !== undefined && typeof target === "function") {
-      const member = `${target.name}.${String(propertyKey)}`;
-      error(`decorator for ${topicDebugName} cannot be used on static member ${member}`);
-    }
+  const topic = (priority: number = defaultPriority): ParameterDecorator => {
+    return function (target: any, propertyKey: string | symbol | undefined, parameterIndex: number): void {
+      // Error out if the topic decorator has been applied to a static method
+      if (propertyKey !== undefined && typeof target === "function") {
+        const member = `${target.name}.${String(propertyKey)}`;
+        error(`decorator for ${topicDebugName} cannot be used on static member ${member}`);
+      }
 
-    // Error out if the topic decorator has been applied to a constructor
-    if (propertyKey === undefined) {
-      error(`decorator for ${topicDebugName} cannot be used on ${target.name}'s constructor`);
-    }
+      if (propertyKey === undefined) {
+        error(`decorator for ${topicDebugName} cannot be used on ${target.name}'s constructor`);
+      }
 
-    const metadata = getMetadata(target.constructor as Constructor<object>);
-    const methods = metadata.subscriptions.methods;
-    const methodSub = methods.get(propertyKey);
+      const metadata = getMetadata(target.constructor as Constructor<object>);
+      const methods = metadata.subscriptions.methods;
+      const methodSub = methods.get(propertyKey);
 
-    if (methodSub) {
-      const member = `${target.constructor.name}.${String(propertyKey)}`;
-      error(`only a single topic subscription is allowed on ${member}`);
-    }
+      if (methodSub) {
+        const member = `${target.constructor.name}.${String(propertyKey)}`;
+        error(`only a single topic subscription is allowed on ${member}`);
+      }
 
-    methods.set(propertyKey, {
-      // @ts-expect-error the displayName property is defined later in the createTopic function
-      topic: topicDecorator,
-      index: parameterIndex,
-    });
+      methods.set(propertyKey, {
+        topic: topic as unknown as Topic<T>,
+        index: parameterIndex,
+        priority: priority,
+      });
+    };
   };
 
-  (topicDecorator as any).displayName = topicDebugName;
-  (topicDecorator as any).broadcastDirection = broadcastDirection;
-  (topicDecorator as any).toString = () => topicDebugName;
-  return topicDecorator as Topic<T>;
+  (topic as any).displayName = topicDebugName;
+  (topic as any).broadcastDirection = broadcastDirection;
+  (topic as any).toString = () => topicDebugName;
+  return topic as unknown as Topic<T>;
 }

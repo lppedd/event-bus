@@ -2,9 +2,13 @@ import type { MessageHandler, Subscription } from "./messageBus";
 import type { Topic } from "./topic";
 
 // @internal
+export const defaultPriority: number = 1;
+
+// @internal
 export interface Registration extends Subscription {
   isDisposed: boolean;
   remaining: number;
+  priority: number;
   handler: MessageHandler;
 }
 

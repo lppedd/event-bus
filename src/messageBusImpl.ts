@@ -143,6 +143,10 @@ export class MessageBusImpl implements MessageBus {
       return;
     }
 
+    // Sort registrations by priority.
+    // A lower priority value means being called first.
+    registrations.sort((a, b) => a.priority - b.priority);
+
     for (const registration of registrations) {
       try {
         registration.handler(data);
