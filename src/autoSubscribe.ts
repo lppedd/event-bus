@@ -12,7 +12,7 @@ type ClassDecorator = <T extends Constructor<object>>(target: T) => T | void;
  * This decorator inspects the decorated class looking for methods with topic-decorated parameters,
  * and subscribes to those topics using the provided `messageBus`.
  *
- * When a message is published, the decorated parameter's method is called with the message data.
+ * When a message is published, the decorated parameter's method is invoked with the message data.
  * If the class instance is garbage collected, the topic subscription is automatically disposed.
  *
  * @example

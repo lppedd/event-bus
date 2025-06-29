@@ -14,7 +14,7 @@ export interface MessageBusOptions {
 
   /**
    * A handler for caught unhandled errors from message handlers,
-   * called when `safePublishing` is true.
+   * invoked when `safePublishing` is true.
    *
    * @defaultValue (e) => console.error(e)
    */
