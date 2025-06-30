@@ -1,5 +1,5 @@
 import type { MessageHandler } from "./messageBus";
-import { defaultPriority, type Registration, type SubscriptionRegistry } from "./registry";
+import type { Registration, SubscriptionRegistry } from "./registry";
 import type { Topic } from "./topic";
 
 // @internal
@@ -10,13 +10,20 @@ export class HandlerRegistration<T> implements Registration {
 
   isDisposed: boolean = false;
   remaining: number;
-  priority: number = defaultPriority;
+  priority: number;
 
-  constructor(registry: SubscriptionRegistry, topic: Topic<T>, handler: MessageHandler<T>, limit: number) {
+  constructor(
+    registry: SubscriptionRegistry,
+    topic: Topic<T>,
+    handler: MessageHandler<T>,
+    limit: number,
+    priority: number,
+  ) {
     this.myRegistry = registry;
     this.myTopic = topic;
     this.myHandler = handler;
     this.remaining = limit;
+    this.priority = priority;
   }
 
   handler = (data: T): void => {
@@ -30,10 +37,6 @@ export class HandlerRegistration<T> implements Registration {
     }
 
     this.myHandler(data);
-  };
-
-  setPriority = (priority: number): void => {
-    this.priority = priority;
   };
 
   dispose = (): void => {

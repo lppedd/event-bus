@@ -238,13 +238,13 @@ describe("MessageBus", () => {
 
   it("should consider subscription priority", () => {
     const handler1 = vi.fn(() => {});
-    messageBus.subscribe(TestTopic, handler1).setPriority(2);
+    messageBus.withPriority(2).subscribe(TestTopic, handler1);
 
     const handler2 = vi.fn(() => {});
     messageBus.subscribe(TestTopic, handler2);
 
     const handler3 = vi.fn(() => {});
-    messageBus.subscribe(TestTopic, handler3).setPriority(0);
+    messageBus.withPriority(0).subscribe(TestTopic, handler3);
 
     messageBus.publish(TestTopic, "one");
     vi.runAllTimers();

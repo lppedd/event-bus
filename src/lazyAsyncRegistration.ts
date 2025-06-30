@@ -1,6 +1,6 @@
 import { error } from "./errors";
 import type { LazyAsyncSubscription } from "./messageBus";
-import { defaultPriority, type Registration, type SubscriptionRegistry } from "./registry";
+import type { Registration, SubscriptionRegistry } from "./registry";
 import type { Topic } from "./topic";
 
 // @internal
@@ -13,12 +13,13 @@ export class LazyAsyncRegistration<T> implements Registration, LazyAsyncSubscrip
 
   isDisposed: boolean = false;
   remaining: number;
-  priority: number = defaultPriority;
+  priority: number;
 
-  constructor(registry: SubscriptionRegistry, topic: Topic<T>, limit: number) {
+  constructor(registry: SubscriptionRegistry, topic: Topic<T>, limit: number, priority: number) {
     this.myRegistry = registry;
     this.myTopic = topic;
     this.remaining = limit;
+    this.priority = priority;
   }
 
   handler = (data: T): void => {
@@ -37,10 +38,6 @@ export class LazyAsyncRegistration<T> implements Registration, LazyAsyncSubscrip
     } else {
       this.myDataQueue.push(data);
     }
-  };
-
-  setPriority = (priority: number): void => {
-    this.priority = priority;
   };
 
   dispose = (): void => {

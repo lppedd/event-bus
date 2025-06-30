@@ -6,6 +6,7 @@ export type {
   MessageHandler,
   MessageListener,
   Subscription,
+  SubscriptionBuilder,
 } from "./messageBus";
 export { createMessageBus } from "./messageBus";
 export type { BroadcastDirection, Topic } from "./topic";

@@ -26,16 +26,6 @@ export interface MessageBusOptions {
  */
 export interface Subscription {
   /**
-   * Sets the priority value for this subscription.
-   * Higher priority subscriptions are notified before lower priority ones.
-   *
-   * The default priority value is `1`.
-   *
-   * @param priority A priority value, where a **lower** number means **higher** priority.
-   */
-  readonly setPriority: (priority: number) => void;
-
-  /**
    * Disposes the subscription, unsubscribing from the topic.
    *
    * After disposal, the subscription will no longer receive messages.
@@ -67,6 +57,122 @@ export interface LazyAsyncSubscription<T> extends AsyncIterableIterator<T>, Subs
 
 export type MessageHandler<T = any> = (data: T) => void;
 export type MessageListener = (topic: Topic, data: any) => void;
+
+/**
+ * Allows creating customized subscriptions.
+ */
+export interface SubscriptionBuilder {
+  /**
+   * Sets the maximum number of messages to receive for the next subscription.
+   *
+   * When the specified limit is reached, the subscription is automatically disposed.
+   *
+   * @param limit The maximum number of messages to receive.
+   */
+  withLimit(limit: number): SubscriptionBuilder;
+
+  /**
+   * Sets the priority for the next subscription.
+   *
+   * Higher priority (**lower** number) subscriptions are notified before lower priority
+   * (**higher** value) ones. The default priority value is `1`.
+   *
+   * @param priority A priority value, where a **lower** number means **higher** priority.
+   */
+  withPriority(priority: number): SubscriptionBuilder;
+
+  /**
+   * Creates a lazily-initialized subscription to the specified topic that is also
+   * an {@link AsyncIterableIterator}.
+   *
+   * This allows consuming published messages using the `for await ... of` syntax.
+   * If an async iteration completes or ends early (e.g., via `break`, `return`, or an error),
+   * the subscription is automatically disposed.
+   *
+   * The subscription is created lazily: it is only registered when the first call
+   * to `next()` or `single()` occurs. If iteration never begins, no subscription is created.
+   *
+   * @example
+   * ```ts
+   * const subscription = messageBus.withLimit(3).subscribe(CommandTopic);
+   *
+   * // Will iterate 3 times max
+   * for await (const command of subscription) {
+   *   switch (command) {
+   *     case "shutdown":
+   *       // ...
+   *       break;
+   *     case "restart":
+   *       // ...
+   *       break;
+   *   }
+   * }
+   * ```
+   *
+   * @param topic The topic to subscribe to.
+   */
+  subscribe<T>(topic: Topic<T>): LazyAsyncSubscription<T>;
+
+  /**
+   * Subscribes to the specified topic with a callback.
+   *
+   * The subscription is established immediately, and stays active until disposal.
+   *
+   * @example
+   * ```ts
+   * // The message handler will be invoked 3 times max
+   * const subscription = messageBus.withLimit(3).subscribe(CommandTopic, (command) => {
+   *   switch (command) {
+   *     case "shutdown":
+   *       // ...
+   *       break;
+   *     case "restart":
+   *       // ...
+   *       break;
+   *   }
+   * });
+   * ```
+   *
+   * @param topic The topic to subscribe to.
+   * @param handler A callback invoked on each topic message.
+   */
+  subscribe<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
+
+  /**
+   * Subscribes once to the specified topic, returning a promise that resolves
+   * with the next published message.
+   *
+   * The subscription will be automatically disposed after receiving the first message.
+   * Useful for awaiting a single message without manually managing the subscription.
+   *
+   * @example
+   * ```ts
+   * const command = await messageBus.withPriority(0).subscribeOnce(CommandTopic);
+   * console.log(`Received command: ${command}`);
+   * ```
+   *
+   * @param topic The topic to subscribe to.
+   */
+  subscribeOnce<T>(topic: Topic<T>): Promise<T>;
+
+  /**
+   * Subscribes once to the specified topic with a callback.
+   *
+   * The callback is invoked with the next message, after which the subscription is disposed.
+   *
+   * @example
+   * ```ts
+   * // Automatically unsubscribes after the next message
+   * messageBus.withPriority(0).subscribeOnce(CommandTopic, (command) => {
+   *   console.log(`Received command: ${command}`);
+   * });
+   * ```
+   *
+   * @param topic The topic to subscribe to.
+   * @param handler A callback invoked on the next topic message.
+   */
+  subscribeOnce<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
+}
 
 /**
  * The message bus API.
@@ -138,9 +244,8 @@ export interface MessageBus {
    * ```
    *
    * @param topic The topic to subscribe to.
-   * @param limit An optional max number of topic messages to receive.
    */
-  subscribe<T>(topic: Topic<T>, limit?: number): LazyAsyncSubscription<T>;
+  subscribe<T>(topic: Topic<T>): LazyAsyncSubscription<T>;
 
   /**
    * Subscribes to the specified topic with a callback.
@@ -171,32 +276,6 @@ export interface MessageBus {
   subscribe<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
 
   /**
-   * Subscribes to the specified topic with a callback and a message limit.
-   *
-   * The subscription will be automatically disposed from after receiving `limit` messages.
-   *
-   * @example
-   * ```ts
-   * // Automatically unsubscribes after 3 messages
-   * messageBus.subscribe(CommandTopic, 3, (command) => {
-   *   switch (command) {
-   *     case "shutdown":
-   *       // ...
-   *       break;
-   *     case "restart":
-   *       // ...
-   *       break;
-   *   }
-   * });
-   * ```
-   *
-   * @param topic The topic to subscribe to.
-   * @param limit The max number of topic messages to receive.
-   * @param handler A callback invoked on each topic message.
-   */
-  subscribe<T>(topic: Topic<T>, limit: number, handler: MessageHandler<T>): Subscription;
-
-  /**
    * Subscribes once to the specified topic, returning a promise that resolves
    * with the next published message.
    *
@@ -216,12 +295,11 @@ export interface MessageBus {
   /**
    * Subscribes once to the specified topic with a callback.
    *
-   * The callback will be invoked exactly once with the next published message,
-   * after which the subscription is automatically disposed.
+   * The callback is invoked with the next message, after which the subscription is disposed.
    *
    * @example
    * ```ts
-   * // Automatically unsubscribes after the message
+   * // Automatically unsubscribes after the next message
    * messageBus.subscribeOnce(CommandTopic, (command) => {
    *   console.log(`Received command: ${command}`);
    * });
@@ -231,6 +309,25 @@ export interface MessageBus {
    * @param handler A callback invoked on the next topic message.
    */
   subscribeOnce<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
+
+  /**
+   * Sets the maximum number of messages to receive for the next subscription.
+   *
+   * When the specified limit is reached, the subscription is automatically disposed.
+   *
+   * @param limit The maximum number of messages to receive.
+   */
+  withLimit(limit: number): SubscriptionBuilder;
+
+  /**
+   * Sets the priority for the next subscription.
+   *
+   * Higher priority (**lower** number) subscriptions are notified before lower priority
+   * (**higher** value) ones. The default priority value is `1`.
+   *
+   * @param priority A priority value, where a **lower** number means **higher** priority.
+   */
+  withPriority(priority: number): SubscriptionBuilder;
 
   /**
    * Adds a message listener that will be notified of every message

@@ -2,6 +2,9 @@ import type { MessageHandler, Subscription } from "./messageBus";
 import type { Topic } from "./topic";
 
 // @internal
+export const defaultLimit: number = -1;
+
+// @internal
 export const defaultPriority: number = 1;
 
 // @internal

@@ -41,7 +41,7 @@ export function AutoSubscribe(messageBus: MessageBus | (() => MessageBus)): Clas
         const thisRef = new WeakRef(this);
 
         for (const [methodKey, methodSub] of metadata.subscriptions.methods) {
-          const subscription = bus.subscribe(methodSub.topic, (data) => {
+          const subscription = bus.withPriority(methodSub.priority).subscribe(methodSub.topic, (data) => {
             const deref = thisRef.deref();
 
             if (deref) {
@@ -52,8 +52,6 @@ export function AutoSubscribe(messageBus: MessageBus | (() => MessageBus)): Clas
               subscription.dispose();
             }
           });
-
-          subscription.setPriority(methodSub.priority);
         }
       }
     };

@@ -8,8 +8,10 @@ import type {
   MessageHandler,
   MessageListener,
   Subscription,
+  SubscriptionBuilder,
 } from "./messageBus";
-import { SubscriptionRegistry } from "./registry";
+import { defaultLimit, defaultPriority, SubscriptionRegistry } from "./registry";
+import { SubscriptionBuilderImpl } from "./subscriptionBuilderImpl";
 import type { Topic } from "./topic";
 
 // @internal
@@ -53,38 +55,48 @@ export class MessageBusImpl implements MessageBus {
     this.publishImpl(topic, data, true, true);
   }
 
-  subscribe<T>(topic: Topic<T>, limit?: number): LazyAsyncSubscription<T>;
+  subscribe<T>(topic: Topic<T>): LazyAsyncSubscription<T>;
   subscribe<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
-  subscribe<T>(topic: Topic<T>, limit: number, handler: MessageHandler<T>): Subscription;
-  subscribe<T>(
-    topic: Topic<T>,
-    limitOrHandler?: number | MessageHandler<T>,
-    handler?: MessageHandler<T>,
-  ): Subscription | LazyAsyncSubscription<T> {
-    this.checkDisposed();
-
-    if (typeof limitOrHandler === "function") {
-      return this.registerHandler(topic, limitOrHandler, -1);
-    }
-
-    if (typeof limitOrHandler === "number" && typeof handler === "function") {
-      assert(limitOrHandler > 0, "the limit value must be greater than 0");
-      return this.registerHandler(topic, handler, limitOrHandler);
-    }
-
-    assert(limitOrHandler === undefined || limitOrHandler > 0, "the limit value must be greater than 0");
-    return new LazyAsyncRegistration(this.myRegistry, topic, limitOrHandler ?? -1);
+  subscribe<T>(topic: Topic<T>, handler?: MessageHandler<T>): Subscription | LazyAsyncSubscription<T> {
+    return this.subscribeImpl(topic, handler, defaultLimit, defaultPriority);
   }
 
   subscribeOnce<T>(topic: Topic<T>): Promise<T>;
   subscribeOnce<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
   subscribeOnce<T>(topic: Topic<T>, handler?: MessageHandler<T>): Subscription | Promise<T> {
-    if (typeof handler === "function") {
-      return this.registerHandler(topic, handler, 1);
+    const subscription = this.subscribeImpl(topic, handler, 1, defaultPriority);
+    return subscription instanceof LazyAsyncRegistration
+      ? subscription.single().finally(() => subscription.dispose())
+      : subscription;
+  }
+
+  // @internal
+  subscribeImpl<T>(
+    topic: Topic<T>,
+    handler: MessageHandler<T> | undefined,
+    limit: number,
+    priority: number,
+  ): LazyAsyncRegistration<T> | Subscription {
+    this.checkDisposed();
+
+    if (handler) {
+      const registration = new HandlerRegistration(this.myRegistry, topic, handler, limit, priority);
+      this.myRegistry.set(topic, registration);
+      return registration;
     }
 
-    const registration = new LazyAsyncRegistration(this.myRegistry, topic, 1);
-    return registration.single().finally(() => registration.dispose());
+    return new LazyAsyncRegistration(this.myRegistry, topic, limit, priority);
+  }
+
+  withLimit(limit: number): SubscriptionBuilder {
+    this.checkDisposed();
+    assert(limit > 0, "the limit value must be greater than 0");
+    return new SubscriptionBuilderImpl(this, limit, defaultPriority);
+  }
+
+  withPriority(priority: number): SubscriptionBuilder {
+    this.checkDisposed();
+    return new SubscriptionBuilderImpl(this, defaultLimit, priority);
   }
 
   addListener(listener: MessageListener): void {
@@ -170,8 +182,7 @@ export class MessageBusImpl implements MessageBus {
       return;
     }
 
-    // Sort registrations by priority.
-    // A lower priority value means being invoked first.
+    // Sort registrations by priority. A lower priority value means being invoked first.
     registrations.sort((a, b) => a.priority - b.priority);
 
     for (const registration of registrations) {
@@ -196,12 +207,6 @@ export class MessageBusImpl implements MessageBus {
     }
 
     this.myPublishing = false;
-  }
-
-  private registerHandler<T>(topic: Topic<T>, handler: MessageHandler<T>, limit: number): Subscription {
-    const registration = new HandlerRegistration(this.myRegistry, topic, handler, limit);
-    this.myRegistry.set(topic, registration);
-    return registration;
   }
 
   private checkDisposed(): void {
