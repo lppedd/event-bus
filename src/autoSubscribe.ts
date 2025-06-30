@@ -45,8 +45,12 @@ export function AutoSubscribe(messageBus: MessageBus | (() => MessageBus)): Clas
             const deref = thisRef.deref();
 
             if (deref) {
+              const args = new Array(methodSub.index + 2);
+              args[methodSub.index] = data;
+              args[methodSub.index + 1] = subscription;
+
               // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-              (deref as any)[methodKey](data);
+              (deref as any)[methodKey](...args);
             } else {
               // The instance has been GCed, so we can get rid of the subscription
               subscription.dispose();

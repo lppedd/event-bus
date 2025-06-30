@@ -230,6 +230,28 @@ and unsubscribes it when the instance is garbage-collected.
 > for the subscription to be activated. Decorating the class alone does not trigger
 > any subscriptions.
 
+### Unsubscribing programmatically
+
+If you do not want to rely on garbage collection to clean up the subscriptions,
+you can unsubscribe manually. To do that, declare a `Subscription` parameter
+immediately after the decorated topic parameter. The runtime will automatically
+inject the corresponding subscription object:
+
+```ts
+@AutoSubscribe(messageBus)
+export class CommandProcessor {
+  onCommand(@CommandTopic() command: string, subscription: Subscription): void {
+    if (command === "shutdown") {
+      /* ... */
+      subscription.dispose();
+    }
+  }
+}
+```
+
+> [!NOTE]
+> Only one `Subscription` parameter is allowed per method, and it must follow the topic parameter.
+
 ## License
 
 [MIT license](https://github.com/lppedd/message-bus/blob/main/LICENSE)
