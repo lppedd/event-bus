@@ -42,6 +42,7 @@ export class MessageBusImpl implements MessageBus {
   }
 
   createChildBus(options?: Partial<MessageBusOptions>): MessageBus {
+    this.checkDisposed();
     const child = new MessageBusImpl(this, {
       ...this.myOptions,
       ...options,
@@ -100,10 +101,12 @@ export class MessageBusImpl implements MessageBus {
   }
 
   addListener(listener: MessageListener): void {
+    this.checkDisposed();
     this.myListeners.add(listener);
   }
 
   removeListener(listener: MessageListener): void {
+    this.checkDisposed();
     this.myListeners.delete(listener);
   }
 
