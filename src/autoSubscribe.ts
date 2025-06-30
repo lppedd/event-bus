@@ -2,10 +2,6 @@ import type { Constructor } from "./contructor";
 import type { MessageBus } from "./messageBus";
 import { getMetadata } from "./metadata";
 
-// TypeScript's built-in type uses Function as upper type, which is too generic
-// @internal
-type ClassDecorator = <T extends Constructor<object>>(target: T) => T | void;
-
 /**
  * Class decorator that automatically subscribes to topics based on method parameter decorators.
  *
@@ -28,10 +24,15 @@ type ClassDecorator = <T extends Constructor<object>>(target: T) => T | void;
  * ```
  *
  * @param messageBus The message bus instance to use for creating subscriptions.
+ * @param onTransformedClass An optional callback invoked with the class created
+ *   by this decorator. Useful for registering the new class externally.
  */
-export function AutoSubscribe(messageBus: MessageBus | (() => MessageBus)): ClassDecorator {
-  return function (Class) {
-    return class extends Class {
+export function AutoSubscribe<Ctor extends Constructor<object>>(
+  messageBus: MessageBus | (() => MessageBus),
+  onTransformedClass?: (Class: Ctor) => void,
+): ClassDecorator {
+  return function (Class: Ctor): Ctor {
+    const subClass = class extends Class {
       constructor(...args: any[]) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         super(...args);
@@ -59,5 +60,39 @@ export function AutoSubscribe(messageBus: MessageBus | (() => MessageBus)): Clas
         }
       }
     };
-  };
+
+    try {
+      preserveClassIdentity(Class, subClass);
+    } catch (e) {
+      console.error(e);
+    }
+
+    onTransformedClass?.(subClass);
+    return subClass;
+  } as ClassDecorator;
+}
+
+function preserveClassIdentity<Ctor extends Constructor<object>>(source: Ctor, target: Ctor): void {
+  for (const name of Object.getOwnPropertyNames(source)) {
+    if (name !== "prototype" && name !== "name") {
+      const descriptor = Object.getOwnPropertyDescriptor(source, name);
+
+      if (descriptor) {
+        Object.defineProperty(target, name, descriptor);
+      }
+    }
+  }
+
+  for (const symbol of Object.getOwnPropertySymbols(source)) {
+    const descriptor = Object.getOwnPropertyDescriptor(source, symbol);
+
+    if (descriptor) {
+      Object.defineProperty(target, symbol, descriptor);
+    }
+  }
+
+  Object.defineProperty(target, "name", {
+    value: source.name,
+    configurable: true,
+  });
 }

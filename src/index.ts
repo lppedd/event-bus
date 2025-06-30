@@ -1,4 +1,5 @@
 export { AutoSubscribe } from "./autoSubscribe";
+export type { Constructor } from "./contructor";
 export type {
   LazyAsyncSubscription,
   MessageBus,
