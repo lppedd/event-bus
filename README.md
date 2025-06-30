@@ -4,6 +4,8 @@
 <div align="center">
 
 [![test](https://img.shields.io/github/actions/workflow/status/lppedd/message-bus/test.yml.svg?branch=main)](https://github.com/lppedd/message-bus/actions/workflows/test.yml)
+[![npm](https://img.shields.io/npm/v/@lppedd/message-bus?color=%23de1f1f&logo=npm)](https://www.npmjs.com/package/@lppedd/message-bus)
+[![npm gzipped size](https://img.shields.io/bundlejs/size/@lppedd/message-bus)](https://bundlejs.com/?q=@lppedd/message-bus)
 [![license](https://img.shields.io/github/license/lppedd/message-bus?color=blue)](https://github.com/lppedd/message-bus/blob/main/LICENSE)
 
 </div>
