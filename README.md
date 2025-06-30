@@ -1,6 +1,6 @@
 <!--suppress HtmlDeprecatedAttribute -->
 <h1 align="center">message-bus</h1>
-<p align="center">Minimal, type-safe pub-sub message bus for TypeScript and JavaScript</p>
+<p align="center">A minimal, type-safe, hierarchical pub-sub message bus for TypeScript and JavaScript</p>
 <div align="center">
 
 [![test](https://img.shields.io/github/actions/workflow/status/lppedd/message-bus/test.yml.svg?branch=main)](https://github.com/lppedd/message-bus/actions/workflows/test.yml)
