@@ -25,11 +25,12 @@ import { getMetadata } from "./metadata";
  *
  * @param messageBus The message bus instance to use for creating subscriptions.
  * @param onTransformedClass An optional callback invoked with the class created
- *   by this decorator. Useful for registering the new class externally.
+ *   by this decorator (`transformedClass`) and the original class (`originalClass`).
+ *   Useful for registering the new class externally.
  */
 export function AutoSubscribe<Ctor extends Constructor<object>>(
   messageBus: MessageBus | (() => MessageBus),
-  onTransformedClass?: (Class: Ctor) => void,
+  onTransformedClass?: (transformedClass: Ctor, originalClass: Ctor) => void,
 ): ClassDecorator {
   return function (Class: Ctor): Ctor {
     const subClass = class extends Class {
@@ -67,7 +68,7 @@ export function AutoSubscribe<Ctor extends Constructor<object>>(
       console.error(e);
     }
 
-    onTransformedClass?.(subClass);
+    onTransformedClass?.(subClass, Class);
     return subClass;
   } as ClassDecorator;
 }
