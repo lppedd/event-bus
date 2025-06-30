@@ -4,6 +4,32 @@
   "license": "MIT",
   "description": "A minimal, type-safe, hierarchical pub-sub message bus for TypeScript and JavaScript",
   "author": "Edoardo Luppi <lp.edoardo@gmail.com>",
+  "homepage": "https://github.com/lppedd/message-bus",
+  "bugs": {
+    "url": "https://github.com/lppedd/message-bus/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lppedd/message-bus.git"
+  },
+  "keywords": [
+    "async",
+    "asynchronous",
+    "pubsub",
+    "publish-subscribe",
+    "bus",
+    "event-bus",
+    "message-bus",
+    "messaging",
+    "subscription",
+    "observer-pattern",
+    "hierarchical",
+    "typescript",
+    "decorator",
+    "decorators",
+    "lightweight",
+    "minimal"
+  ],
   "files": [
     "dist"
   ],
