@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- Exposed the dummy `__type?: T` property on the `Topic<T>` interface to fix
+  type compatibility issues in `MessageBus.publish` overloads.
+
 ## 0.1.2
 
 - Refined the `@AutoSubscribe` decorator enhancement introduced in 0.1.1.
