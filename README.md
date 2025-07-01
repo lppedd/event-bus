@@ -21,6 +21,7 @@
 - [Subscribing to topics](#subscribing-to-topics)
 - [Asynchronous consumption](#asynchronous-consumption-)
 - [Decorator-based subscription](#decorator-based-subscription)
+- [Subscription options](#subscription-options)
 
 ### Installation
 
@@ -76,9 +77,12 @@ You can customize the message bus behavior by also passing options:
 
 ```ts
 const bus = createMessageBus({
-  safePublishing: true,   // Prevents publishing from failing if a message handler throws
-  errorHandler: () => {}, // Handles errors thrown by message handlers (requires safePublishing: true).
-});                       // By default, caught unhandled errors are printed to console.error.
+  // Prevents publishing from failing if a message handler throws
+  safePublishing: true,
+  // Handles errors thrown by message handlers (requires safePublishing: true).
+  // By default, caught unhandled errors are printed to console.error.
+  errorHandler: () => {}
+});                       
 ```
 
 ### Child buses
@@ -253,6 +257,62 @@ export class CommandProcessor {
 
 > [!NOTE]
 > Only one `Subscription` parameter is allowed per method, and it must follow the topic parameter.
+
+## Subscription options
+
+### Limit
+
+Limits how many messages a subscription can receive before it is automatically disposed.
+
+This option is useful when you are only interested in the **first n** messages of a topic
+and want to avoid manually disposing the subscription.
+
+```ts
+// The handler will be called at most 3 times
+bus.withLimit(3).subscribe(CommandTopic, (command) => {
+  /* ... */
+});
+```
+
+The same applies to asynchronous subscriptions:
+
+```ts
+// The loop will iterate up to 3 times
+for await (const command of bus.withLimit(3).subscribe(CommandTopic)) {
+  /* ... */
+}
+```
+
+If fewer than `limit` messages are published, the subscription simply remains idle
+unless manually disposed.
+
+> [!NOTE]
+> `withLimit` returns a subscription builder, not the message bus itself.  
+> This builder allows fluently applying options before finalizing the subscription.
+
+### Priority
+
+Sets the delivery priority of a subscription.
+
+Lower values mean higher priority: for example, a subscription with priority `0`
+will receive messages before other subscriptions with priority `1`.
+
+By default, all subscriptions use a priority of `1`.
+
+```ts
+bus.withPriority(0).subscribe(CommandTopic, (command) => {
+  /* ... */
+});
+```
+
+You can also combine `withPriority` and `withLimit`:
+
+```ts
+// Subscribe with both a custom priority and message limit
+bus.withLimit(2).withPriority(0).subscribe(CommandTopic, (command) => {
+  /* ... */
+});
+```
 
 ## License
 
