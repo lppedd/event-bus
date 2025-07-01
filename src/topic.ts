@@ -21,6 +21,9 @@ export type BroadcastDirection = "children" | "parent";
  * An identifier used to categorize messages in the message bus.
  */
 export interface Topic<T = any> {
+  // Decorator's callable signature
+  (priority?: number): ParameterDecorator;
+
   /**
    * A human-readable name for the topic, useful for debugging and logging.
    */
@@ -33,13 +36,13 @@ export interface Topic<T = any> {
    */
   readonly broadcastDirection: BroadcastDirection;
 
-  // Decorator's callable signature
-  (priority?: number): ParameterDecorator;
-
   /**
-   * @internal
+   * Ensures that different Topic<T> types are not structurally compatible.
+   * This property is never used at runtime.
+   *
+   * @private
    */
-  readonly __type: T;
+  readonly __type?: T;
 }
 
 /**
