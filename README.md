@@ -324,8 +324,8 @@ subscribers, and they are notified for every message, even if no topic subscript
 This might be useful for logging, analytics, or debugging.
 
 ```ts
-const listener: MessageListener = (topic, data) => {
-  console.log(`Message published to topic ${topic.displayName}: ${data}`);
+const listener: MessageListener = (topic, data, subscriberCount) => {
+  console.log(`Message published to ${topic} with ${subscriberCount} subscribers: ${data}`);
 };
 
 // Add the listener

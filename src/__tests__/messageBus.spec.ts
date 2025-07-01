@@ -255,7 +255,7 @@ describe("MessageBus", () => {
   });
 
   it("should listen to topic messages", () => {
-    const listener = vi.fn((_topic, _data) => {});
+    const listener = vi.fn((_topic, _data, _count) => {});
     messageBus.addListener(listener);
 
     const childBus = messageBus.createChildBus();
@@ -267,8 +267,8 @@ describe("MessageBus", () => {
     vi.runAllTimers();
 
     expect(listener).toHaveBeenCalledTimes(2);
-    expect(listener).toHaveBeenNthCalledWith(1, TestTopic, "three");
-    expect(listener).toHaveBeenNthCalledWith(2, TestTopic, "four");
+    expect(listener).toHaveBeenNthCalledWith(1, TestTopic, "three", 0);
+    expect(listener).toHaveBeenNthCalledWith(2, TestTopic, "four", 0);
 
     // Only listeners added to the bus where publish() is invoked must be notified.
     // Listeners of child buses must not be notified.

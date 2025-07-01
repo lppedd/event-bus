@@ -168,35 +168,30 @@ export class MessageBusImpl implements MessageBus {
       }
     }
 
+    const registrations = this.myRegistry.get(topic);
+    const registrationCount = registrations?.length ?? 0;
+
     if (listeners) {
       // Listeners are invoked in the order they have been added
       for (const listener of this.myListeners) {
-        listener(topic, data);
+        listener(topic, data, registrationCount);
       }
     }
 
-    this.publishMessageToHandlers(topic, data);
-  }
+    if (registrations && registrationCount > 0) {
+      // Sort registrations by priority. A lower priority value means being invoked first.
+      registrations.sort((a, b) => a.priority - b.priority);
 
-  private publishMessageToHandlers<T>(topic: Topic<T>, data: T): void {
-    const registrations = this.myRegistry.get(topic);
+      for (const registration of registrations) {
+        try {
+          registration.handler(data);
+        } catch (e) {
+          if (!this.myOptions.safePublishing) {
+            error("unhandled error in message handler", e);
+          }
 
-    if (!registrations || registrations.length === 0) {
-      return;
-    }
-
-    // Sort registrations by priority. A lower priority value means being invoked first.
-    registrations.sort((a, b) => a.priority - b.priority);
-
-    for (const registration of registrations) {
-      try {
-        registration.handler(data);
-      } catch (e) {
-        if (!this.myOptions.safePublishing) {
-          error("unhandled error in message handler", e);
+          this.myOptions.errorHandler(e);
         }
-
-        this.myOptions.errorHandler(e);
       }
     }
   }

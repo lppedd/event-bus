@@ -56,7 +56,7 @@ export interface LazyAsyncSubscription<T> extends AsyncIterableIterator<T>, Subs
 }
 
 export type MessageHandler<T = any> = (data: T) => void;
-export type MessageListener = (topic: Topic, data: any) => void;
+export type MessageListener = (topic: Topic, data: any, subscriberCount: number) => void;
 
 /**
  * Allows creating customized subscriptions.
