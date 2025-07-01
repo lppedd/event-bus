@@ -22,6 +22,7 @@
 - [Asynchronous consumption](#asynchronous-consumption-)
 - [Decorator-based subscription](#decorator-based-subscription)
 - [Subscription options](#subscription-options)
+- [Listening to all messages](#listening-to-all-messages)
 
 ### Installation
 
@@ -313,6 +314,30 @@ bus.withLimit(2).withPriority(0).subscribe(CommandTopic, (command) => {
   /* ... */
 });
 ```
+
+## Listening to all messages
+
+In addition to subscribing to specific topics, you can also listen to all messages
+published on the bus, regardless of topic. Listeners are invoked before any topic-specific
+subscribers, and they are notified for every message, even if no topic subscriptions exist.
+
+This might be useful for logging, analytics, or debugging.
+
+```ts
+const listener: MessageListener = (topic, data) => {
+  console.log(`Message published to topic ${topic.displayName}: ${data}`);
+};
+
+// Add the listener
+bus.addListener(listener);
+
+// Remove the listener later, if needed
+bus.removeListener(listener);
+```
+
+**Important**: listeners only run on the bus where the message is initially published.
+If the message propagates to child buses (the default behavior), or to the parent bus,
+listeners added to those buses will not be called.
 
 ## License
 
