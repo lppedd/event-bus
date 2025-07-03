@@ -2,6 +2,7 @@ import { assert, error, tag } from "./errors";
 import { HandlerRegistration } from "./handlerRegistration";
 import { LazyAsyncRegistration } from "./lazyAsyncRegistration";
 import type {
+  ChildMessageBusOptions,
   LazyAsyncSubscription,
   MessageBus,
   MessageBusOptions,
@@ -18,16 +19,21 @@ import type { Topic } from "./topic";
 export class MessageBusImpl implements MessageBus {
   private readonly myParent?: MessageBusImpl;
   private readonly myOptions: MessageBusOptions;
+  private readonly myListeners: Set<MessageListener>;
   private readonly myRegistry = new SubscriptionRegistry();
-  private readonly myListeners = new Set<MessageListener>();
   private readonly myChildren = new Set<MessageBusImpl>();
   private readonly myPublishQueue: (() => void)[] = [];
 
   private myPublishing: boolean = false;
   private myDisposed: boolean = false;
 
-  constructor(parent: MessageBusImpl | undefined, options?: Partial<MessageBusOptions>) {
+  constructor(
+    parent?: MessageBusImpl,
+    listeners?: Set<MessageListener>,
+    options?: Partial<MessageBusOptions>,
+  ) {
     this.myParent = parent;
+    this.myListeners = listeners ?? new Set();
     this.myOptions = {
       safePublishing: false,
       errorHandler: (e) => {
@@ -41,15 +47,17 @@ export class MessageBusImpl implements MessageBus {
     return this.myDisposed;
   }
 
-  createChildBus(options?: Partial<MessageBusOptions>): MessageBus {
+  createChildBus(options?: Partial<ChildMessageBusOptions>): MessageBus {
     this.checkDisposed();
-    const child = new MessageBusImpl(this, {
+
+    const listeners = options?.copyListeners === false ? undefined : new Set(this.myListeners);
+    const childBus = new MessageBusImpl(this, listeners, {
       ...this.myOptions,
       ...options,
     });
 
-    this.myChildren.add(child);
-    return child;
+    this.myChildren.add(childBus);
+    return childBus;
   }
 
   publish<T>(topic: Topic<T>, data?: T): void {

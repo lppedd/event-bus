@@ -285,6 +285,18 @@ describe("MessageBus", () => {
     expect(childListener).toHaveBeenCalledTimes(0);
   });
 
+  it("should copy listeners from parent bus", () => {
+    const listener = vi.fn(() => {});
+    messageBus.addListener(listener);
+    expect(listener).toHaveBeenCalledTimes(0);
+
+    const childBus = messageBus.createChildBus();
+    childBus.publish(TestTopic, "one");
+
+    vi.runAllTimers();
+    expect(listener).toHaveBeenCalledExactlyOnceWith(TestTopic, "one", 0);
+  });
+
   it("should dispose itself and children", () => {
     const childBus = messageBus.createChildBus();
     expect(messageBus.isDisposed).toBe(false);

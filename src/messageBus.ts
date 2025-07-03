@@ -21,6 +21,15 @@ export interface MessageBusOptions {
   readonly errorHandler: (e: unknown) => void;
 }
 
+export interface ChildMessageBusOptions extends MessageBusOptions {
+  /**
+   * Whether to copy {@link MessageListener}(s) from the parent bus.
+   *
+   * @defaultValue true
+   */
+  readonly copyListeners: boolean;
+}
+
 /**
  * Represents an active subscription to a {@link Topic}.
  */
@@ -188,7 +197,7 @@ export interface MessageBus {
    *
    * Messages with `children` broadcast direction will be propagated to it.
    */
-  createChildBus(options?: Partial<MessageBusOptions>): MessageBus;
+  createChildBus(options?: Partial<ChildMessageBusOptions>): MessageBus;
 
   /**
    * Publishes a new message without any associated data to the specified topic.
@@ -360,5 +369,5 @@ export interface MessageBus {
  * Creates a new message bus.
  */
 export function createMessageBus(options?: Partial<MessageBusOptions>): MessageBus {
-  return new MessageBusImpl(undefined, options);
+  return new MessageBusImpl(undefined, undefined, options);
 }
