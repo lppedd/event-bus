@@ -11,17 +11,25 @@
 </div>
 <img align="center" src="./.github/images/hierarchical-bus.jpg"  alt="Hierarchical Bus" />
 
-## Table of Contents
+### Table of Contents
 
 - [Installation](#installation)
 - [API reference](#api-reference)
 - [Quickstart](#quickstart)
 - [Creating a message bus](#creating-a-message-bus)
+  - [Child buses](#child-buses)
 - [Publishing messages](#publishing-messages)
+  - [Message ordering](#message-ordering-)
 - [Subscribing to topics](#subscribing-to-topics)
-- [Asynchronous consumption](#asynchronous-consumption-)
+  - [Single message subscription](#single-message-subscription)
+  - [Multiple topic subscription](#multiple-topic-subscription)
+- [Asynchronous subscription](#asynchronous-subscription-)
+  - [Asynchronous single message subscription](#asynchronous-single-message-subscription)
 - [Decorator-based subscription](#decorator-based-subscription)
+  - [Unsubscribing programmatically](#unsubscribing-programmatically)
 - [Subscription options](#subscription-options)
+  - [Limit](#limit)
+  - [Priority](#priority)
 - [Listening to all messages](#listening-to-all-messages)
 
 ### Installation
@@ -149,7 +157,7 @@ published on the current bus or any of its parent buses.
 
 You can unsubscribe from the topic at any time by calling `subscription.dispose()`.
 
-### Single-message subscription
+### Single message subscription
 
 If you're only interested in the single next message, use:
 
@@ -162,7 +170,24 @@ bus.subscribeOnce(CommandTopic, (command) => {
 This subscribes to the topic and automatically disposes the created `Subscription`
 after receiving a single message.
 
-## Asynchronous consumption ⚡
+### Multiple topic subscription
+
+You can subscribe to multiple topics with a single handler by passing an array of topics:
+
+```ts
+const StringTopic = createTopic<string>("...");
+const NumberTopic = createTopic<number>("...");
+
+bus.subscribe([StringTopic, NumberTopic], (data /* string | number */) => {
+  /* ... */
+});
+```
+
+The `data` parameter is automatically inferred as `string | number`, based on the union
+of all topic types. This pattern is useful when the same logic should apply to multiple
+related message types.
+
+## Asynchronous subscription ⚡
 
 An alternative way to subscribe to a topic is using async iterations:
 
@@ -193,7 +218,7 @@ ends, whether normally or due to a `break`, a `return`, or an error.
 If you use `single()` and no longer need the subscription afterward, remember to
 dispose it manually with `subscription.dispose()`.
 
-### Asynchronous single-message subscription
+### Asynchronous single message subscription
 
 The asynchronous alternative to `bus.subscribeOnce(topic, handler)` is:
 
@@ -205,23 +230,6 @@ const command = await bus.subscribeOnce(CommandTopic); // Promise<string>
 > If you are only interested in a single message, prefer using `subscribeOnce(Topic)`
 > over `subscribe(Topic) + subscription.single()`. This avoids the need to manually
 > dispose the subscription.
-
-### Multiple topic subscription
-
-You can subscribe to multiple topics with a single handler by passing an array of topics:
-
-```ts
-const StringTopic = createTopic<string>("...");
-const NumberTopic = createTopic<number>("...");
-
-bus.subscribe([StringTopic, NumberTopic], (data /* string | number */) => {
-  /* ... */
-});
-```
-
-The `data` parameter is automatically inferred as `string | number`, based on the union
-of all topic types. This pattern is useful when the same logic should apply to multiple
-related message types.
 
 ## Decorator-based subscription
 
