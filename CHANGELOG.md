@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- Enabled subscribing to multiple topics in a single call while preserving type safety.
+- Added support for inheriting message listeners from the parent bus when creating a child bus.  
+  Listener inheritance is configurable via the `copyListeners` option.
+
 ## 0.1.3
 
 - Exposed the dummy `__type?: T` property on the `Topic<T>` interface to fix
