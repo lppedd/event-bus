@@ -3,10 +3,10 @@ import type { Registration, SubscriptionRegistry } from "./registry";
 import type { Topic } from "./topic";
 
 // @internal
-export class HandlerRegistration<T> implements Registration {
+export class HandlerRegistration implements Registration {
   private readonly myRegistry: SubscriptionRegistry;
-  private readonly myTopic: Topic<T>;
-  private readonly myHandler: MessageHandler<T>;
+  private readonly myTopic: Topic;
+  private readonly myHandler: MessageHandler;
 
   isDisposed: boolean = false;
   remaining: number;
@@ -14,8 +14,8 @@ export class HandlerRegistration<T> implements Registration {
 
   constructor(
     registry: SubscriptionRegistry,
-    topic: Topic<T>,
-    handler: MessageHandler<T>,
+    topic: Topic,
+    handler: MessageHandler,
     limit: number,
     priority: number,
   ) {
@@ -26,7 +26,7 @@ export class HandlerRegistration<T> implements Registration {
     this.priority = priority;
   }
 
-  handler = (data: T): void => {
+  handler = (data: unknown): void => {
     if (this.remaining === 0) {
       this.dispose();
       return;

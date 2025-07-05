@@ -20,7 +20,7 @@ export type BroadcastDirection = "children" | "parent";
 /**
  * An identifier used to categorize messages in the message bus.
  */
-export interface Topic<T = any> {
+export interface Topic<T = unknown> {
   // Decorator's callable signature
   (priority?: number): ParameterDecorator;
 

@@ -60,19 +60,19 @@ export class MessageBusImpl implements MessageBus {
     return childBus;
   }
 
-  publish<T>(topic: Topic<T>, data?: T): void {
+  publish(topic: Topic, data?: unknown): void {
     this.publishImpl(topic, data, true, true);
   }
 
-  subscribe<T>(topic: Topic<T>): LazyAsyncSubscription<T>;
-  subscribe<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
-  subscribe<T>(topic: Topic<T>, handler?: MessageHandler<T>): Subscription | LazyAsyncSubscription<T> {
+  subscribe(topic: Topic): LazyAsyncSubscription;
+  subscribe(topic: Topic, handler: MessageHandler): Subscription;
+  subscribe(topic: Topic, handler?: MessageHandler): Subscription | LazyAsyncSubscription {
     return this.subscribeImpl(topic, handler, defaultLimit, defaultPriority);
   }
 
-  subscribeOnce<T>(topic: Topic<T>): Promise<T>;
-  subscribeOnce<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
-  subscribeOnce<T>(topic: Topic<T>, handler?: MessageHandler<T>): Subscription | Promise<T> {
+  subscribeOnce(topic: Topic): Promise<unknown>;
+  subscribeOnce(topic: Topic, handler: MessageHandler): Subscription;
+  subscribeOnce(topic: Topic, handler?: MessageHandler): Subscription | Promise<unknown> {
     const subscription = this.subscribeImpl(topic, handler, 1, defaultPriority);
     return subscription instanceof LazyAsyncRegistration
       ? subscription.single().finally(() => subscription.dispose())
@@ -80,12 +80,12 @@ export class MessageBusImpl implements MessageBus {
   }
 
   // @internal
-  subscribeImpl<T>(
-    topic: Topic<T>,
-    handler: MessageHandler<T> | undefined,
+  subscribeImpl(
+    topic: Topic,
+    handler: MessageHandler | undefined,
     limit: number,
     priority: number,
-  ): LazyAsyncRegistration<T> | Subscription {
+  ): LazyAsyncRegistration | Subscription {
     this.checkDisposed();
 
     if (handler) {
@@ -143,7 +143,7 @@ export class MessageBusImpl implements MessageBus {
     this.myListeners.clear();
   }
 
-  private publishImpl<T>(topic: Topic<T>, data: T | undefined, broadcast: boolean, listeners: boolean): void {
+  private publishImpl(topic: Topic, data: unknown, broadcast: boolean, listeners: boolean): void {
     this.checkDisposed();
     this.myPublishQueue.push(() => this.publishMessage(topic, data, broadcast, listeners));
 
@@ -153,12 +153,7 @@ export class MessageBusImpl implements MessageBus {
     }
   }
 
-  private publishMessage<T>(
-    topic: Topic<T>,
-    data: T | undefined,
-    broadcast: boolean,
-    listeners: boolean,
-  ): void {
+  private publishMessage(topic: Topic, data: unknown, broadcast: boolean, listeners: boolean): void {
     // Keep in mind that publish() will queue the task, so child buses,
     // or the parent bus depending on the broadcasting direction,
     // will receive the message after this bus

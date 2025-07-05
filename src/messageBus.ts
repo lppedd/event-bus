@@ -55,7 +55,7 @@ export interface Subscription {
  * triggers the underlying registration. If the consumer never starts an iteration
  * or never awaits a message, no subscription is created.
  */
-export interface LazyAsyncSubscription<T> extends AsyncIterableIterator<T>, Subscription {
+export interface LazyAsyncSubscription<T = unknown> extends AsyncIterableIterator<T>, Subscription {
   /**
    * Awaits the next message published to the topic.
    *
@@ -64,8 +64,8 @@ export interface LazyAsyncSubscription<T> extends AsyncIterableIterator<T>, Subs
   readonly single: () => Promise<T>;
 }
 
-export type MessageHandler<T = any> = (data: T) => void;
-export type MessageListener = (topic: Topic, data: any, subscriberCount: number) => void;
+export type MessageHandler<T = unknown> = (data: T) => void;
+export type MessageListener = (topic: Topic, data: unknown, subscriberCount: number) => void;
 
 /**
  * Allows creating customized subscriptions.

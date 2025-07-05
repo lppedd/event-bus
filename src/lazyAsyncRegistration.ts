@@ -4,25 +4,25 @@ import type { Registration, SubscriptionRegistry } from "./registry";
 import type { Topic } from "./topic";
 
 // @internal
-export class LazyAsyncRegistration<T> implements Registration, LazyAsyncSubscription<T> {
-  private readonly myDataQueue: T[] = [];
-  private readonly myPromiseQueue: [(v: IteratorResult<T>) => void, (e?: any) => void][] = [];
+export class LazyAsyncRegistration implements Registration, LazyAsyncSubscription {
+  private readonly myDataQueue: unknown[] = [];
+  private readonly myPromiseQueue: [(v: IteratorResult<unknown>) => void, (e?: any) => void][] = [];
   private readonly myRegistry: SubscriptionRegistry;
-  private readonly myTopic: Topic<T>;
+  private readonly myTopic: Topic;
   private isRegistered: boolean = false;
 
   isDisposed: boolean = false;
   remaining: number;
   priority: number;
 
-  constructor(registry: SubscriptionRegistry, topic: Topic<T>, limit: number, priority: number) {
+  constructor(registry: SubscriptionRegistry, topic: Topic, limit: number, priority: number) {
     this.myRegistry = registry;
     this.myTopic = topic;
     this.remaining = limit;
     this.priority = priority;
   }
 
-  handler = (data: T): void => {
+  handler = (data: unknown): void => {
     if (this.remaining === 0) {
       this.dispose();
       return;
@@ -45,12 +45,12 @@ export class LazyAsyncRegistration<T> implements Registration, LazyAsyncSubscrip
     this.myRegistry.delete(this.myTopic, this);
   };
 
-  single = async (): Promise<T> => {
+  single = async (): Promise<unknown> => {
     const { done, value } = await this.next();
     return !done ? value : error("the subscription is disposed");
   };
 
-  next = async (): Promise<IteratorResult<T>> => {
+  next = async (): Promise<IteratorResult<unknown>> => {
     // Consume from the queue before waiting for more data
     if (this.myDataQueue.length > 0) {
       const data = this.myDataQueue.shift()!;
@@ -70,7 +70,7 @@ export class LazyAsyncRegistration<T> implements Registration, LazyAsyncSubscrip
   };
 
   // eslint-disable-next-line @typescript-eslint/require-await
-  return = async (): Promise<IteratorResult<T>> => {
+  return = async (): Promise<IteratorResult<unknown>> => {
     this.dispose();
 
     // Resolve pending promises
@@ -82,7 +82,7 @@ export class LazyAsyncRegistration<T> implements Registration, LazyAsyncSubscrip
     return { done: true, value: undefined };
   };
 
-  throw = (e?: any): Promise<IteratorResult<T>> => {
+  throw = (e?: any): Promise<IteratorResult<unknown>> => {
     this.dispose();
 
     while (this.myPromiseQueue.length > 0) {
@@ -93,5 +93,5 @@ export class LazyAsyncRegistration<T> implements Registration, LazyAsyncSubscrip
     throw e;
   };
 
-  public [Symbol.asyncIterator] = (): AsyncIterableIterator<T> => this;
+  public [Symbol.asyncIterator] = (): AsyncIterableIterator<unknown> => this;
 }
