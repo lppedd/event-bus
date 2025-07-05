@@ -66,13 +66,17 @@ export class MessageBusImpl implements MessageBus {
 
   subscribe(topic: Topic): LazyAsyncSubscription;
   subscribe(topic: Topic, handler: MessageHandler): Subscription;
-  subscribe(topic: Topic, handler?: MessageHandler): Subscription | LazyAsyncSubscription {
+  subscribe(topic: Topic[]): LazyAsyncSubscription;
+  subscribe(topic: Topic[], handler: MessageHandler): Subscription;
+  subscribe(topic: Topic | Topic[], handler?: MessageHandler): Subscription | LazyAsyncSubscription {
     return this.subscribeImpl(topic, handler, defaultLimit, defaultPriority);
   }
 
   subscribeOnce(topic: Topic): Promise<unknown>;
   subscribeOnce(topic: Topic, handler: MessageHandler): Subscription;
-  subscribeOnce(topic: Topic, handler?: MessageHandler): Subscription | Promise<unknown> {
+  subscribeOnce(topic: Topic[]): Promise<unknown>;
+  subscribeOnce(topic: Topic[], handler: MessageHandler): Subscription;
+  subscribeOnce(topic: Topic | Topic[], handler?: MessageHandler): Subscription | Promise<unknown> {
     const subscription = this.subscribeImpl(topic, handler, 1, defaultPriority);
     return subscription instanceof LazyAsyncRegistration
       ? subscription.single().finally(() => subscription.dispose())
@@ -81,20 +85,17 @@ export class MessageBusImpl implements MessageBus {
 
   // @internal
   subscribeImpl(
-    topic: Topic,
+    topic: Topic | Topic[],
     handler: MessageHandler | undefined,
     limit: number,
     priority: number,
   ): LazyAsyncRegistration | Subscription {
     this.checkDisposed();
-
-    if (handler) {
-      const registration = new HandlerRegistration(this.myRegistry, topic, handler, limit, priority);
-      this.myRegistry.set(topic, registration);
-      return registration;
-    }
-
-    return new LazyAsyncRegistration(this.myRegistry, topic, limit, priority);
+    const topics = Array.isArray(topic) ? topic : [topic];
+    assert(topics.length > 0, "at least one topic must be provided for subscription");
+    return handler
+      ? new HandlerRegistration(this.myRegistry, topics, handler, limit, priority)
+      : new LazyAsyncRegistration(this.myRegistry, topics, limit, priority);
   }
 
   withLimit(limit: number): SubscriptionBuilder {

@@ -46,6 +46,13 @@ export interface Topic<T = unknown> {
 }
 
 /**
+ * Represents a non-empty array of topics.
+ */
+export type Topics<T extends [any, ...any[]]> = {
+  readonly [K in keyof T]: Topic<T[K]>;
+};
+
+/**
  * Creates a new {@link Topic} that can be used to publish or subscribe to messages.
  *
  * @example

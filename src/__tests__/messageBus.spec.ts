@@ -56,6 +56,33 @@ describe("MessageBus", () => {
     expect(example.data).toBe("it works");
   });
 
+  it("should subscribe to multiple topics", () => {
+    const StringTopic = createTopic<string>("StringTopic");
+    const NumberTopic = createTopic<number>("NumberTopic");
+
+    const handler = vi.fn((_data) => {});
+    const subscription = messageBus.subscribe([StringTopic, NumberTopic], handler);
+
+    messageBus.publish(StringTopic, "a string");
+    vi.runAllTimers();
+
+    messageBus.publish(NumberTopic, 99);
+    vi.runAllTimers();
+
+    // Verify all topic subscriptions are removed
+    subscription.dispose();
+
+    messageBus.publish(StringTopic, "another string");
+    vi.runAllTimers();
+
+    messageBus.publish(NumberTopic, 10);
+    vi.runAllTimers();
+
+    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler).toHaveBeenNthCalledWith(1, "a string");
+    expect(handler).toHaveBeenNthCalledWith(2, 99);
+  });
+
   it("should throw if topic decorator is placed on constructor", () => {
     expect(() => {
       class Example {

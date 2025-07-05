@@ -5,7 +5,7 @@ import type { Topic } from "./topic";
 // @internal
 export class HandlerRegistration implements Registration {
   private readonly myRegistry: SubscriptionRegistry;
-  private readonly myTopic: Topic;
+  private readonly myTopics: Topic[];
   private readonly myHandler: MessageHandler;
 
   isDisposed: boolean = false;
@@ -14,16 +14,20 @@ export class HandlerRegistration implements Registration {
 
   constructor(
     registry: SubscriptionRegistry,
-    topic: Topic,
+    topics: Topic[],
     handler: MessageHandler,
     limit: number,
     priority: number,
   ) {
     this.myRegistry = registry;
-    this.myTopic = topic;
+    this.myTopics = topics;
     this.myHandler = handler;
     this.remaining = limit;
     this.priority = priority;
+
+    for (const topic of this.myTopics) {
+      this.myRegistry.set(topic, this);
+    }
   }
 
   handler = (data: unknown): void => {
@@ -41,6 +45,9 @@ export class HandlerRegistration implements Registration {
 
   dispose = (): void => {
     this.isDisposed = true;
-    this.myRegistry.delete(this.myTopic, this);
+
+    for (const topic of this.myTopics) {
+      this.myRegistry.delete(topic, this);
+    }
   };
 }

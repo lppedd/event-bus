@@ -1,6 +1,7 @@
 export { AutoSubscribe } from "./autoSubscribe";
 export type { Constructor } from "./contructor";
 export type {
+  ChildMessageBusOptions,
   LazyAsyncSubscription,
   MessageBus,
   MessageBusOptions,
@@ -10,5 +11,5 @@ export type {
   SubscriptionBuilder,
 } from "./messageBus";
 export { createMessageBus } from "./messageBus";
-export type { BroadcastDirection, Topic } from "./topic";
+export type { BroadcastDirection, Topic, Topics } from "./topic";
 export { createTopic } from "./topic";

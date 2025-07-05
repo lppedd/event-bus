@@ -30,13 +30,17 @@ export class SubscriptionBuilderImpl implements SubscriptionBuilder {
 
   subscribe(topic: Topic): LazyAsyncSubscription;
   subscribe(topic: Topic, handler: MessageHandler): Subscription;
-  subscribe(topic: Topic, handler?: MessageHandler): Subscription | LazyAsyncSubscription {
+  subscribe(topic: Topic[]): LazyAsyncSubscription;
+  subscribe(topic: Topic[], handler: MessageHandler): Subscription;
+  subscribe(topic: Topic | Topic[], handler?: MessageHandler): Subscription | LazyAsyncSubscription {
     return this.myMessageBus.subscribeImpl(topic, handler, this.myLimit, this.myPriority);
   }
 
   subscribeOnce(topic: Topic): Promise<unknown>;
   subscribeOnce(topic: Topic, handler: MessageHandler): Subscription;
-  subscribeOnce(topic: Topic, handler?: MessageHandler): Subscription | Promise<unknown> {
+  subscribeOnce(topic: Topic[]): Promise<unknown>;
+  subscribeOnce(topic: Topic[], handler: MessageHandler): Subscription;
+  subscribeOnce(topic: Topic | Topic[], handler?: MessageHandler): Subscription | Promise<unknown> {
     assert(this.myLimit === 1, "setting a limit is not supported with subscribeOnce");
     const subscription = this.myMessageBus.subscribeImpl(topic, handler, 1, defaultPriority);
     return subscription instanceof LazyAsyncRegistration

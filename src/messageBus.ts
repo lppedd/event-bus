@@ -1,5 +1,5 @@
 import { MessageBusImpl } from "./messageBusImpl";
-import type { Topic } from "./topic";
+import type { Topic, Topics } from "./topic";
 
 export interface MessageBusOptions {
   /**
@@ -121,6 +121,7 @@ export interface SubscriptionBuilder {
    * @param topic The topic to subscribe to.
    */
   subscribe<T>(topic: Topic<T>): LazyAsyncSubscription<T>;
+  subscribe<T extends [any, ...any[]]>(topics: Topics<T>): LazyAsyncSubscription<T[number]>;
 
   /**
    * Subscribes to the specified topic with a callback.
@@ -146,6 +147,7 @@ export interface SubscriptionBuilder {
    * @param handler A callback invoked on each topic message.
    */
   subscribe<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
+  subscribe<T extends [any, ...any[]]>(topics: Topics<T>, handler: MessageHandler<T[number]>): Subscription;
 
   /**
    * Subscribes once to the specified topic, returning a promise that resolves
@@ -163,6 +165,7 @@ export interface SubscriptionBuilder {
    * @param topic The topic to subscribe to.
    */
   subscribeOnce<T>(topic: Topic<T>): Promise<T>;
+  subscribeOnce<T extends [any, ...any[]]>(topics: Topics<T>): Promise<T[number]>;
 
   /**
    * Subscribes once to the specified topic with a callback.
@@ -181,6 +184,10 @@ export interface SubscriptionBuilder {
    * @param handler A callback invoked on the next topic message.
    */
   subscribeOnce<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
+  subscribeOnce<T extends [any, ...any[]]>(
+    topics: Topics<T>,
+    handler: MessageHandler<T[number]>,
+  ): Subscription;
 }
 
 /**
@@ -255,6 +262,7 @@ export interface MessageBus {
    * @param topic The topic to subscribe to.
    */
   subscribe<T>(topic: Topic<T>): LazyAsyncSubscription<T>;
+  subscribe<T extends [any, ...any[]]>(topics: Topics<T>): LazyAsyncSubscription<T[number]>;
 
   /**
    * Subscribes to the specified topic with a callback.
@@ -283,6 +291,7 @@ export interface MessageBus {
    * @param handler A callback invoked on each topic message.
    */
   subscribe<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
+  subscribe<T extends [any, ...any[]]>(topics: Topics<T>, handler: MessageHandler<T[number]>): Subscription;
 
   /**
    * Subscribes once to the specified topic, returning a promise that resolves
@@ -300,6 +309,7 @@ export interface MessageBus {
    * @param topic The topic to subscribe to.
    */
   subscribeOnce<T>(topic: Topic<T>): Promise<T>;
+  subscribeOnce<T extends [any, ...any[]]>(topics: Topics<T>): Promise<T[number]>;
 
   /**
    * Subscribes once to the specified topic with a callback.
@@ -318,6 +328,10 @@ export interface MessageBus {
    * @param handler A callback invoked on the next topic message.
    */
   subscribeOnce<T>(topic: Topic<T>, handler: MessageHandler<T>): Subscription;
+  subscribeOnce<T extends [any, ...any[]]>(
+    topics: Topics<T>,
+    handler: MessageHandler<T[number]>,
+  ): Subscription;
 
   /**
    * Sets the maximum number of messages to receive for the next subscription.

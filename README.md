@@ -206,6 +206,23 @@ const command = await bus.subscribeOnce(CommandTopic); // Promise<string>
 > over `subscribe(Topic) + subscription.single()`. This avoids the need to manually
 > dispose the subscription.
 
+### Multiple topic subscription
+
+You can subscribe to multiple topics with a single handler by passing an array of topics:
+
+```ts
+const StringTopic = createTopic<string>("...");
+const NumberTopic = createTopic<number>("...");
+
+bus.subscribe([StringTopic, NumberTopic], (data /* string | number */) => {
+  /* ... */
+});
+```
+
+The `data` parameter is automatically inferred as `string | number`, based on the union
+of all topic types. This pattern is useful when the same logic should apply to multiple
+related message types.
+
 ## Decorator-based subscription
 
 The library also supports a declarative way to subscribe to topics, by using

@@ -8,16 +8,16 @@ export class LazyAsyncRegistration implements Registration, LazyAsyncSubscriptio
   private readonly myDataQueue: unknown[] = [];
   private readonly myPromiseQueue: [(v: IteratorResult<unknown>) => void, (e?: any) => void][] = [];
   private readonly myRegistry: SubscriptionRegistry;
-  private readonly myTopic: Topic;
+  private readonly myTopics: Topic[];
   private isRegistered: boolean = false;
 
   isDisposed: boolean = false;
   remaining: number;
   priority: number;
 
-  constructor(registry: SubscriptionRegistry, topic: Topic, limit: number, priority: number) {
+  constructor(registry: SubscriptionRegistry, topics: Topic[], limit: number, priority: number) {
     this.myRegistry = registry;
-    this.myTopic = topic;
+    this.myTopics = topics;
     this.remaining = limit;
     this.priority = priority;
   }
@@ -42,7 +42,10 @@ export class LazyAsyncRegistration implements Registration, LazyAsyncSubscriptio
 
   dispose = (): void => {
     this.isDisposed = true;
-    this.myRegistry.delete(this.myTopic, this);
+
+    for (const topic of this.myTopics) {
+      this.myRegistry.delete(topic, this);
+    }
   };
 
   single = async (): Promise<unknown> => {
@@ -63,7 +66,10 @@ export class LazyAsyncRegistration implements Registration, LazyAsyncSubscriptio
 
     if (!this.isRegistered) {
       this.isRegistered = true;
-      this.myRegistry.set(this.myTopic, this);
+
+      for (const topic of this.myTopics) {
+        this.myRegistry.set(topic, this);
+      }
     }
 
     return new Promise((resolve, reject) => this.myPromiseQueue.push([resolve, reject]));
